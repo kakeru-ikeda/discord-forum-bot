@@ -69,7 +69,6 @@ export class ForumPost implements IForumPost {
             '',
             `**投稿者:** ${message.authorNickname}`,
             `**元のメッセージ:** ${message.getMessageUrl()}`,
-            `**元のチャンネル:** <#${message.channelId}>`,
             `**投稿時刻:** ${message.timestamp.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}`
         ];
 
