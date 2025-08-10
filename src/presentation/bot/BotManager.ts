@@ -115,10 +115,28 @@ export class BotManager {
 
     public async start(): Promise<void> {
         try {
-            this.logger.info('Starting Discord Forum Bot...');
+            const environment = process.env.NODE_ENV || 'development';
+            const isProduction = environment === 'production';
+
+            this.logger.info(`Starting Discord Forum Bot... (Environment: ${environment})`);
 
             const config = ConfigManager.getInstance();
             const discordConfig = config.getDiscordConfig();
+            const appConfig = config.getConfig();
+
+            // 設定情報をログに出力（機密情報は除く）
+            this.logger.info('Bot Configuration:', {
+                environment: `${environment}`,
+                guildId: discordConfig.guildId,
+                monitorChannels: discordConfig.monitorChannelIds.length,
+                forumChannelId: discordConfig.forumChannelId,
+                alertChannelId: discordConfig.alertChannelId,
+                questionPrefix: discordConfig.questionPrefix,
+                triggerEmoji: discordConfig.triggerEmoji,
+                logLevel: appConfig.logging.level,
+                fileLogging: appConfig.logging.enableFileLogging,
+                discordAlerts: appConfig.logging.enableDiscordAlerts
+            });
 
             // Discord イベントハンドラーの登録
             this.discordClient.addMessageHandler(async (message) => {
@@ -136,10 +154,10 @@ export class BotManager {
             await this.alertNotifier.sendAlert(
                 'info',
                 'Bot Started',
-                'Discord Forum Bot has started successfully'
+                `Discord Forum Bot has started successfully (Environment: ${environment})`
             );
 
-            this.logger.info('Discord Forum Bot started successfully');
+            this.logger.info(`Discord Forum Bot started successfully (Environment: ${environment})`);
 
         } catch (error) {
             this.logger.error('Failed to start bot', { error: error instanceof Error ? error.message : String(error) });

@@ -75,6 +75,89 @@ npm run build
 npm start
 ```
 
+## Docker での実行
+
+### 前提条件
+
+- Docker Engine 20.10以上
+- Docker Compose v2 (推奨)
+
+### セットアップ
+
+1. 環境変数ファイルを準備：
+```bash
+cp .env.example .env
+# .env ファイルを編集して実際の値を設定
+```
+
+2. Docker Compose を使用して起動：
+
+```bash
+# Docker Compose v2 を使用
+docker compose up -d
+
+# または npm script を使用
+npm run docker:up
+```
+
+### Docker コマンド
+
+#### ビルド
+```bash
+# 本番用イメージをビルド
+npm run docker:build
+```
+
+#### 起動・停止
+```bash
+# 起動
+npm run docker:up
+
+# 停止
+npm run docker:down
+```
+
+#### ログ確認
+```bash
+# リアルタイムログ表示
+npm run docker:logs
+
+# または直接 Docker Compose コマンドを使用
+docker compose logs -f discord-bot
+```
+
+#### その他の Docker 操作
+```bash
+# コンテナの状態確認
+docker compose ps
+
+# コンテナに接続
+docker compose exec discord-bot sh
+
+# イメージの削除
+docker compose down --rmi all
+
+# ボリュームも含めて削除
+docker compose down -v
+```
+
+### Docker 設定のカスタマイズ
+
+必要に応じて以下のファイルを編集してください：
+
+- `Dockerfile`: 本番用コンテナ設定
+- `compose.yml`: 本番用 Docker Compose 設定
+- `.dockerignore`: Docker ビルド時に除外するファイル
+
+### 開発環境での実行
+
+開発時は Docker を使わず、直接 npm で実行することを推奨します：
+
+```bash
+# 開発環境での起動
+npm run dev
+```
+
 ## 設定項目
 
 ### 必須環境変数

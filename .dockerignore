@@ -1,0 +1,40 @@
+# Node.js
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# TypeScript
+*.tsbuildinfo
+
+# IDEs
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile*
+docker-compose*
+compose*
+
+# Logs
+logs/*.log
+
+# Environment variables
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Miscellaneous
+*.md
+LICENSE
