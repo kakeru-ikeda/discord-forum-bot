@@ -63,8 +63,14 @@ export class AlertNotifier implements IAlertNotifier {
             info: 0x0099FF   // 青
         };
 
+        const icons = {
+            error: '🚨', // エラー
+            warn: '⚠️',  // 警告
+            info: 'ℹ️'   // 情報
+        };
+
         const embed = new EmbedBuilder()
-            .setTitle(`🚨 ${title}`)
+            .setTitle(`${icons[level]} ${title}`)
             .setDescription(message)
             .setColor(colors[level])
             .setTimestamp();
