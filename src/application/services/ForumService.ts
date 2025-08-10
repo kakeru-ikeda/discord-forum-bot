@@ -5,6 +5,7 @@ import { ILogger } from '../../infrastructure/logger/Logger';
 import { IAlertNotifier } from '../../infrastructure/logger/AlertNotifier';
 import { EmojiConfig, EmojiUtils } from '../../infrastructure/discord/EmojiUtils';
 import { ReactionEmoji, GuildEmoji, ApplicationEmoji } from 'discord.js';
+import { IMessageRepository } from '../../domain/repositories/IMessageRepository';
 
 export interface IForumServiceConfig {
     forumChannelId: string;
@@ -17,6 +18,7 @@ export class ForumService {
     constructor(
         private readonly createForumUseCase: CreateForumUseCase,
         private readonly monitorMessageUseCase: MonitorMessageUseCase,
+        private readonly messageRepository: IMessageRepository,
         private readonly config: IForumServiceConfig,
         private readonly logger: ILogger,
         private readonly alertNotifier: IAlertNotifier
@@ -31,11 +33,27 @@ export class ForumService {
                 content: message.getContentPreview(100),
             });
 
-            const shouldCreate = await this.monitorMessageUseCase.shouldCreateForum(
-                message,
-                this.config.questionPrefix,
+            // 監視対象のチャンネルかチェック
+            const isMonitored = await this.messageRepository.isMonitoredChannel(message.channelId);
+            if (!isMonitored) {
+                this.logger.debug('Message is not from monitored channel', {
+                    messageId: message.id,
+                    channelId: message.channelId,
+                });
+                return;
+            }
+
+            // 質問プレフィックスで始まるかチェック
+            const isQuestionMessage = message.isQuestionMessage(this.config.questionPrefix);
+
+            // トリガー絵文字のリアクションがあるかチェック
+            const hasReaction = await this.messageRepository.hasReaction(
+                message.id,
+                message.channelId,
                 this.config.triggerEmoji
             );
+
+            const shouldCreate = isQuestionMessage || hasReaction;
 
             if (!shouldCreate) {
                 this.logger.debug('Message does not meet forum creation criteria', {
@@ -48,6 +66,8 @@ export class ForumService {
                 messageId: message.id,
                 authorId: message.authorId,
                 channelId: message.channelId,
+                isQuestionMessage,
+                hasReaction,
             });
 
             const result: CreateForumResult = await this.createForumUseCase.execute(
@@ -55,6 +75,27 @@ export class ForumService {
                 this.config.forumChannelId,
                 this.config.maxTitleLength
             );
+
+            // 質問プレフィックスによってフォーラムが作成された場合、トリガー絵文字を追加
+            if (isQuestionMessage && !hasReaction) {
+                const reactionAdded = await this.messageRepository.addReaction(
+                    message.id,
+                    message.channelId,
+                    this.config.triggerEmoji
+                );
+
+                if (reactionAdded) {
+                    this.logger.info('Trigger emoji added to question message', {
+                        messageId: message.id,
+                        emoji: EmojiUtils.getIdentifier(this.config.triggerEmoji),
+                    });
+                } else {
+                    this.logger.warn('Failed to add trigger emoji to question message', {
+                        messageId: message.id,
+                        emoji: EmojiUtils.getIdentifier(this.config.triggerEmoji),
+                    });
+                }
+            }
 
             this.logger.info('Forum created successfully', {
                 messageId: message.id,

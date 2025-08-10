@@ -61,6 +61,7 @@ export class BotManager {
         const forumService = new ForumService(
             createForumUseCase,
             monitorMessageUseCase,
+            messageRepository,
             {
                 forumChannelId: appConfig.discord.forumChannelId,
                 questionPrefix: appConfig.discord.questionPrefix,

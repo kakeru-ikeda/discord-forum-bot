@@ -103,4 +103,24 @@ export class EmojiUtils {
         }
         return config.unicode || config.raw;
     }
+
+    /**
+     * リアクション追加用の絵文字識別子を取得
+     * message.react()で使用する形式に変換
+     */
+    static getReactionIdentifier(config: EmojiConfig): string {
+        // カスタム絵文字の場合はIDを使用
+        if (config.id) {
+            return config.id;
+        }
+        // Unicode絵文字またはデフォルト絵文字の名前を使用
+        if (config.unicode) {
+            return config.unicode;
+        }
+        if (config.name) {
+            return config.name;
+        }
+        // フォールバックとして raw を使用
+        return config.raw;
+    }
 }

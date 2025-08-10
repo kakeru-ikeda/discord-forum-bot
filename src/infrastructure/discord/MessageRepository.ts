@@ -124,4 +124,42 @@ export class MessageRepository implements IMessageRepository {
             throw error;
         }
     }
+
+    async addReaction(messageId: string, channelId: string, emojiConfig: EmojiConfig): Promise<boolean> {
+        try {
+            const channel = await this.client.channels.fetch(channelId);
+
+            if (!channel || !channel.isTextBased()) {
+                this.logger.warn('Channel not found or not text-based for adding reaction', { channelId });
+                return false;
+            }
+
+            const message = await (channel as TextChannel).messages.fetch(messageId);
+
+            if (!message) {
+                this.logger.warn('Message not found for adding reaction', { messageId, channelId });
+                return false;
+            }
+
+            // 絵文字をリアクションとして追加
+            const emojiIdentifier = EmojiUtils.getReactionIdentifier(emojiConfig);
+            await message.react(emojiIdentifier);
+
+            this.logger.info('Reaction added successfully', {
+                messageId,
+                channelId,
+                emojiIdentifier: EmojiUtils.getIdentifier(emojiConfig),
+            });
+
+            return true;
+        } catch (error) {
+            this.logger.error('Failed to add reaction', {
+                messageId,
+                channelId,
+                emojiIdentifier: EmojiUtils.getIdentifier(emojiConfig),
+                error: error instanceof Error ? error.message : String(error),
+            });
+            return false;
+        }
+    }
 }
