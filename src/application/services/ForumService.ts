@@ -66,7 +66,7 @@ export class ForumService {
             await this.alertNotifier.sendAlert(
                 'info',
                 'Forum Created',
-                `New forum post created from message by ${message.authorName}\nForum URL: ${result.forumUrl}`,
+                `New forum post created from message by ${message.authorNickname}\nForum URL: ${result.forumUrl}`,
             );
 
         } catch (error) {
@@ -78,7 +78,7 @@ export class ForumService {
             await this.alertNotifier.sendAlert(
                 'error',
                 'Forum Creation Failed',
-                `Failed to create forum from message ${message.id} by ${message.authorName}`,
+                `Failed to create forum from message ${message.id} by ${message.authorNickname}`,
                 error instanceof Error ? error : new Error(String(error))
             );
 
@@ -152,7 +152,7 @@ export class ForumService {
             await this.alertNotifier.sendAlert(
                 'info',
                 'Forum Created from Reaction',
-                `New forum post created from reaction by user ${userId} on message by ${message.authorName}\nForum URL: ${result.forumUrl}`,
+                `New forum post created from reaction by user ${userId} on message by ${message.authorNickname}\nForum URL: ${result.forumUrl}`,
             );
 
         } catch (error) {

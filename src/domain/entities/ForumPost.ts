@@ -5,6 +5,7 @@ export interface IForumPost {
     content: string;
     authorId: string;
     authorName: string;
+    authorNickname: string;
     originalMessageId: string;
     originalChannelId: string;
     createdAt: Date;
@@ -16,6 +17,7 @@ export class ForumPost implements IForumPost {
         public readonly content: string,
         public readonly authorId: string,
         public readonly authorName: string,
+        public readonly authorNickname: string,
         public readonly originalMessageId: string,
         public readonly originalChannelId: string,
         public readonly createdAt: Date
@@ -30,6 +32,7 @@ export class ForumPost implements IForumPost {
             content,
             message.authorId,
             message.authorName,
+            message.authorNickname,
             message.id,
             message.channelId,
             new Date()
@@ -38,20 +41,21 @@ export class ForumPost implements IForumPost {
 
     private static generateTitle(message: DiscordMessage, maxTitleLength: number): string {
         const contentPreview = message.getContentPreview(50);
-        const baseTitle = `${message.authorName} - [${contentPreview}]`;
+        // サーバーニックネームを使用
+        const baseTitle = `${message.authorNickname} - [${contentPreview}]`;
 
         if (baseTitle.length <= maxTitleLength) {
             return baseTitle;
         }
 
         // タイトルが長すぎる場合は切り詰める
-        const authorPart = `${message.authorName} - [`;
+        const authorPart = `${message.authorNickname} - [`;
         const closeBracket = ']';
         const availableLength = maxTitleLength - authorPart.length - closeBracket.length - 3; // "..." の分
 
         if (availableLength <= 0) {
             // 作者名だけでも長すぎる場合
-            return `${message.authorName.substring(0, maxTitleLength - 6)}... - []`;
+            return `${message.authorNickname.substring(0, maxTitleLength - 6)}... - []`;
         }
 
         const truncatedContent = contentPreview.substring(0, availableLength) + '...';
@@ -63,8 +67,8 @@ export class ForumPost implements IForumPost {
             '**元の投稿:**',
             message.content,
             '',
-            `**投稿者:** ${message.authorName}`,
-            `**元のメッセージID:** ${message.id}`,
+            `**投稿者:** ${message.authorNickname}`,
+            `**元のメッセージ:** ${message.getMessageUrl()}`,
             `**元のチャンネル:** <#${message.channelId}>`,
             `**投稿時刻:** ${message.timestamp.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}`
         ];
