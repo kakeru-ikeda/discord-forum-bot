@@ -13,6 +13,7 @@ import { MessageHandler } from '../../application/handlers/MessageHandler';
 import { ReactionHandler } from '../../application/handlers/ReactionHandler';
 import { DiscordConnectionManager } from '../../infrastructure/connection/DiscordConnectionManager';
 import { ExponentialBackoffStrategy, FixedIntervalStrategy } from '../../infrastructure/connection/ReconnectionStrategy';
+import { ForumCreationStatusStorage } from '../../infrastructure/storage/ForumCreationStatusStorage';
 
 export class BotManager {
     private discordClient: DiscordClient;
@@ -41,10 +42,14 @@ export class BotManager {
             appConfig.logging.enableDiscordAlerts
         );
 
+        // Storage の初期化
+        const forumCreationStatusStorage = new ForumCreationStatusStorage();
+
         // Repository の初期化
         const forumRepository = new ForumRepository(
             this.discordClient.getClient(),
-            this.logger
+            this.logger,
+            forumCreationStatusStorage
         );
 
         const messageRepository = new MessageRepository(

@@ -2,10 +2,12 @@ import { IForumRepository } from '../repositories/IForumRepository';
 import { IMessageRepository } from '../repositories/IMessageRepository';
 import { ForumPost } from '../entities/ForumPost';
 import { DiscordMessage } from '../entities/DiscordMessage';
+import { ForumCreationStatus } from '../entities/ForumCreationStatus';
 
 export interface CreateForumResult {
     forumPostId: string;
     forumUrl: string;
+    isNewForum: boolean; // 新しくフォーラムが作成されたかどうか
 }
 
 export class CreateForumUseCase {
@@ -17,8 +19,24 @@ export class CreateForumUseCase {
     async execute(
         message: DiscordMessage,
         forumChannelId: string,
-        maxTitleLength: number
+        maxTitleLength: number,
+        triggeredBy?: string // フォーラム作成をトリガーしたユーザーID（リアクション時など）
     ): Promise<CreateForumResult> {
+        // 既存のフォーラム作成状態をチェック
+        const existingStatus = await this.forumRepository.getForumCreationStatus(
+            message.id,
+            message.channelId
+        );
+
+        if (existingStatus) {
+            // 既にフォーラムが作成されている場合は既存の情報を返す
+            return {
+                forumPostId: existingStatus.forumPostId,
+                forumUrl: existingStatus.forumUrl,
+                isNewForum: false
+            };
+        }
+
         // フォーラムチャンネルがアクセス可能かチェック
         const isAccessible = await this.forumRepository.isForumChannelAccessible(forumChannelId);
         if (!isAccessible) {
@@ -34,13 +52,25 @@ export class CreateForumUseCase {
         // フォーラムのURLを生成
         const forumUrl = this.forumRepository.getForumPostUrl(message.guildId, forumChannelId, forumPostId);
 
+        // フォーラム作成状態を記録
+        const creationStatus = ForumCreationStatus.create(
+            message.id,
+            message.channelId,
+            message.guildId,
+            forumPostId,
+            forumUrl,
+            triggeredBy || message.authorId
+        );
+        await this.forumRepository.saveForumCreationStatus(creationStatus);
+
         // 元の投稿チャンネルに指定されたメッセージを送信
         const notificationMessage = `おぅりゃりゃー！　とぉりゃりゃー！\n${forumUrl}`;
         await this.messageRepository.sendMessage(message.channelId, notificationMessage);
 
         return {
             forumPostId,
-            forumUrl
+            forumUrl,
+            isNewForum: true
         };
     }
 }

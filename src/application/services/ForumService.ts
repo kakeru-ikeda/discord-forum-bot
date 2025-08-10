@@ -76,6 +76,15 @@ export class ForumService {
                 this.config.maxTitleLength
             );
 
+            // 新しくフォーラムが作成された場合のみ処理を続行
+            if (!result.isNewForum) {
+                this.logger.debug('Forum already exists for this message', {
+                    messageId: message.id,
+                    existingForumPostId: result.forumPostId,
+                });
+                return;
+            }
+
             // 質問プレフィックスによってフォーラムが作成された場合、トリガー絵文字を追加
             if (isQuestionMessage && !hasReaction) {
                 const reactionAdded = await this.messageRepository.addReaction(
@@ -179,22 +188,32 @@ export class ForumService {
             const result: CreateForumResult = await this.createForumUseCase.execute(
                 message,
                 this.config.forumChannelId,
-                this.config.maxTitleLength
+                this.config.maxTitleLength,
+                userId // リアクションしたユーザーIDを渡す
             );
 
-            this.logger.info('Forum created successfully from reaction', {
-                messageId,
-                forumPostId: result.forumPostId,
-                forumUrl: result.forumUrl,
-                reactionUserId: userId,
-                originalAuthor: message.authorId,
-            });
+            // 新しくフォーラムが作成された場合のみログ出力とアラート送信
+            if (result.isNewForum) {
+                this.logger.info('Forum created successfully from reaction', {
+                    messageId,
+                    forumPostId: result.forumPostId,
+                    forumUrl: result.forumUrl,
+                    reactionUserId: userId,
+                    originalAuthor: message.authorId,
+                });
 
-            await this.alertNotifier.sendAlert(
-                'info',
-                'Forum Created from Reaction',
-                `New forum post created from reaction by user ${userId} on message by ${message.authorNickname}\nForum URL: ${result.forumUrl}`,
-            );
+                await this.alertNotifier.sendAlert(
+                    'info',
+                    'Forum Created from Reaction',
+                    `New forum post created from reaction by user ${userId} on message by ${message.authorNickname}\nForum URL: ${result.forumUrl}`,
+                );
+            } else {
+                this.logger.debug('Forum already exists for this message, skipping duplicate creation', {
+                    messageId,
+                    existingForumPostId: result.forumPostId,
+                    reactionUserId: userId,
+                });
+            }
 
         } catch (error) {
             this.logger.error('Failed to handle reaction for forum creation', {

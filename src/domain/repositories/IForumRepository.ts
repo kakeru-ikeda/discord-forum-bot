@@ -1,4 +1,5 @@
 import { ForumPost } from '../entities/ForumPost';
+import { ForumCreationStatus } from '../entities/ForumCreationStatus';
 
 export interface IForumRepository {
     /**
@@ -24,4 +25,18 @@ export interface IForumRepository {
      * @returns フォーラム投稿のURL
      */
     getForumPostUrl(guildId: string, forumChannelId: string, forumPostId: string): string;
+
+    /**
+     * 指定されたメッセージに対してフォーラムが既に作成されているかチェックする
+     * @param messageId メッセージID
+     * @param channelId チャンネルID
+     * @returns フォーラムが既に作成されている場合はForumCreationStatus、そうでなければnull
+     */
+    getForumCreationStatus(messageId: string, channelId: string): Promise<ForumCreationStatus | null>;
+
+    /**
+     * メッセージに対するフォーラム作成状態を記録する
+     * @param status フォーラム作成状態
+     */
+    saveForumCreationStatus(status: ForumCreationStatus): Promise<void>;
 }

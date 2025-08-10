@@ -1,12 +1,15 @@
 import { Client, ForumChannel, ChannelType } from 'discord.js';
 import { IForumRepository } from '../../domain/repositories/IForumRepository';
 import { ForumPost } from '../../domain/entities/ForumPost';
+import { ForumCreationStatus } from '../../domain/entities/ForumCreationStatus';
 import { ILogger } from '../logger/Logger';
+import { ForumCreationStatusStorage } from '../storage/ForumCreationStatusStorage';
 
 export class ForumRepository implements IForumRepository {
     constructor(
         private readonly client: Client,
-        private readonly logger: ILogger
+        private readonly logger: ILogger,
+        private readonly statusStorage: ForumCreationStatusStorage
     ) { }
 
     async createForumPost(forumChannelId: string, forumPost: ForumPost): Promise<string> {
@@ -93,5 +96,37 @@ export class ForumRepository implements IForumRepository {
 
     getForumPostUrl(guildId: string, forumChannelId: string, forumPostId: string): string {
         return `https://discord.com/channels/${guildId}/${forumPostId}`;
+    }
+
+    async getForumCreationStatus(messageId: string, channelId: string): Promise<ForumCreationStatus | null> {
+        try {
+            return await this.statusStorage.get(messageId, channelId);
+        } catch (error) {
+            this.logger.error('Failed to get forum creation status', {
+                messageId,
+                channelId,
+                error: error instanceof Error ? error.message : String(error),
+            });
+            return null;
+        }
+    }
+
+    async saveForumCreationStatus(status: ForumCreationStatus): Promise<void> {
+        try {
+            await this.statusStorage.save(status);
+            this.logger.debug('Forum creation status saved', {
+                messageId: status.messageId,
+                channelId: status.channelId,
+                forumPostId: status.forumPostId,
+                createdBy: status.createdBy,
+            });
+        } catch (error) {
+            this.logger.error('Failed to save forum creation status', {
+                messageId: status.messageId,
+                channelId: status.channelId,
+                error: error instanceof Error ? error.message : String(error),
+            });
+            throw error;
+        }
     }
 }
