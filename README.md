@@ -49,6 +49,21 @@ cp .env.example .env
   - アニメーション絵文字: `<a:emoji_name:123456789>`
 - `QUESTION_PREFIX`: 質問として認識するプレフィックス（デフォルト: 質問！）
 - `LOG_LEVEL`: ログレベル（デフォルト: info）
+
+接続管理設定：
+- `HEALTH_CHECK_INTERVAL`: ヘルスチェック間隔（ミリ秒）（デフォルト: 30000）
+- `RECONNECTION_STRATEGY`: 再接続戦略（exponential | fixed）（デフォルト: exponential）
+
+指数バックオフ戦略設定：
+- `EXPONENTIAL_BASE_DELAY`: 初期遅延（ミリ秒）（デフォルト: 1000）
+- `EXPONENTIAL_MAX_DELAY`: 最大遅延（ミリ秒）（デフォルト: 60000）
+- `EXPONENTIAL_MAX_RETRIES`: 最大再試行回数（デフォルト: 10）
+- `EXPONENTIAL_BACKOFF_MULTIPLIER`: バックオフ倍率（デフォルト: 2）
+
+固定間隔戦略設定：
+- `FIXED_INTERVAL`: 再接続間隔（ミリ秒）（デフォルト: 5000）
+- `FIXED_MAX_RETRIES`: 最大再試行回数（デフォルト: 20）
+- `LOG_LEVEL`: ログレベル（デフォルト: info）
 - その他のログとBot設定
 
 ### 3. Discord Bot の設定

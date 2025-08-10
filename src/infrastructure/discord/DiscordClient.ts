@@ -48,6 +48,10 @@ export class DiscordClient {
         }
     }
 
+    public getLoginToken(): string | null {
+        return this.client.token;
+    }
+
     public async shutdown(): Promise<void> {
         try {
             if (this.client) {

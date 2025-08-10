@@ -26,10 +26,26 @@ export interface IBotConfig {
     maxContentPreview: number;
 }
 
+export interface IConnectionConfig {
+    healthCheckInterval: number;
+    reconnectionStrategy: 'exponential' | 'fixed';
+    exponentialBackoff: {
+        baseDelay: number;
+        maxDelay: number;
+        maxRetries: number;
+        backoffMultiplier: number;
+    };
+    fixedInterval: {
+        interval: number;
+        maxRetries: number;
+    };
+}
+
 export interface IAppConfig {
     discord: IDiscordConfig;
     logging: ILoggingConfig;
     bot: IBotConfig;
+    connection: IConnectionConfig;
 }
 
 export class ConfigManager {
@@ -58,6 +74,20 @@ export class ConfigManager {
             bot: {
                 maxTitleLength: this.getNumberEnvVar('MAX_TITLE_LENGTH', 100),
                 maxContentPreview: this.getNumberEnvVar('MAX_CONTENT_PREVIEW', 200),
+            },
+            connection: {
+                healthCheckInterval: this.getNumberEnvVar('HEALTH_CHECK_INTERVAL', 30000),
+                reconnectionStrategy: this.getEnvVar('RECONNECTION_STRATEGY', 'exponential') as 'exponential' | 'fixed',
+                exponentialBackoff: {
+                    baseDelay: this.getNumberEnvVar('EXPONENTIAL_BASE_DELAY', 1000),
+                    maxDelay: this.getNumberEnvVar('EXPONENTIAL_MAX_DELAY', 60000),
+                    maxRetries: this.getNumberEnvVar('EXPONENTIAL_MAX_RETRIES', 10),
+                    backoffMultiplier: this.getNumberEnvVar('EXPONENTIAL_BACKOFF_MULTIPLIER', 2),
+                },
+                fixedInterval: {
+                    interval: this.getNumberEnvVar('FIXED_INTERVAL', 5000),
+                    maxRetries: this.getNumberEnvVar('FIXED_MAX_RETRIES', 20),
+                },
             },
         };
     }
@@ -129,5 +159,9 @@ export class ConfigManager {
 
     public getBotConfig(): IBotConfig {
         return this.appConfig.bot;
+    }
+
+    public getConnectionConfig(): IConnectionConfig {
+        return this.appConfig.connection;
     }
 }

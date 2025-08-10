@@ -6,9 +6,13 @@ import { AlertNotifier } from '../../infrastructure/logger/AlertNotifier';
 import { ConfigManager } from '../../infrastructure/config/ConfigManager';
 import { CreateForumUseCase } from '../../domain/usecases/CreateForumUseCase';
 import { MonitorMessageUseCase } from '../../domain/usecases/MonitorMessageUseCase';
+import { ConnectionMonitorUseCase } from '../../domain/usecases/ConnectionMonitorUseCase';
 import { ForumService } from '../../application/services/ForumService';
+import { ConnectionService } from '../../application/services/ConnectionService';
 import { MessageHandler } from '../../application/handlers/MessageHandler';
 import { ReactionHandler } from '../../application/handlers/ReactionHandler';
+import { DiscordConnectionManager } from '../../infrastructure/connection/DiscordConnectionManager';
+import { ExponentialBackoffStrategy, FixedIntervalStrategy } from '../../infrastructure/connection/ReconnectionStrategy';
 
 export class BotManager {
     private discordClient: DiscordClient;
@@ -16,6 +20,7 @@ export class BotManager {
     private alertNotifier: AlertNotifier;
     private messageHandler: MessageHandler;
     private reactionHandler: ReactionHandler;
+    private connectionService!: ConnectionService;
     private isShuttingDown: boolean = false;
 
     constructor() {
@@ -70,8 +75,49 @@ export class BotManager {
         this.messageHandler = new MessageHandler(forumService, this.logger);
         this.reactionHandler = new ReactionHandler(forumService, this.logger);
 
+        // 接続管理機能の初期化
+        this.setupConnectionManagement();
+
         // エラーハンドリングの設定
         this.setupErrorHandling();
+    }
+
+    private setupConnectionManagement(): void {
+        const config = ConfigManager.getInstance();
+        const connectionConfig = config.getConnectionConfig();
+        const discordConfig = config.getDiscordConfig();
+
+        // 再接続戦略の選択
+        const reconnectionStrategy = connectionConfig.reconnectionStrategy === 'exponential'
+            ? new ExponentialBackoffStrategy(
+                connectionConfig.exponentialBackoff.baseDelay,
+                connectionConfig.exponentialBackoff.maxDelay,
+                connectionConfig.exponentialBackoff.maxRetries,
+                connectionConfig.exponentialBackoff.backoffMultiplier
+            )
+            : new FixedIntervalStrategy(
+                connectionConfig.fixedInterval.interval,
+                connectionConfig.fixedInterval.maxRetries
+            );
+
+        // 接続管理インスタンスの作成
+        const connectionManager = new DiscordConnectionManager(
+            this.discordClient.getClient(),
+            reconnectionStrategy,
+            this.logger,
+            discordConfig.token,
+            connectionConfig.healthCheckInterval
+        );
+
+        // Use Caseの初期化
+        const connectionMonitorUseCase = new ConnectionMonitorUseCase(connectionManager);
+
+        // 接続サービスの初期化
+        this.connectionService = new ConnectionService(
+            connectionMonitorUseCase,
+            this.logger,
+            this.alertNotifier
+        );
     }
 
     private setupErrorHandling(): void {
@@ -150,6 +196,9 @@ export class BotManager {
             // Discord にログイン
             await this.discordClient.login(discordConfig.token);
 
+            // 接続監視を開始
+            await this.connectionService.start();
+
             // 起動成功をアラート
             await this.alertNotifier.sendAlert(
                 'info',
@@ -186,6 +235,9 @@ export class BotManager {
                 `Discord Forum Bot is shutting down (${signal})`
             );
 
+            // 接続監視を停止
+            this.connectionService.stop();
+
             await this.discordClient.shutdown();
             this.logger.info('Graceful shutdown completed');
             process.exit(0);
@@ -193,5 +245,25 @@ export class BotManager {
             this.logger.error('Error during graceful shutdown', { error: error instanceof Error ? error.message : String(error) });
             process.exit(1);
         }
+    }
+
+    /**
+     * 手動で再接続を実行
+     */
+    public async forceReconnect(): Promise<boolean> {
+        if (this.isShuttingDown) {
+            this.logger.warn('Cannot reconnect during shutdown');
+            return false;
+        }
+
+        this.logger.info('Manual reconnection requested via BotManager');
+        return await this.connectionService.forceReconnect();
+    }
+
+    /**
+     * 接続状態を取得
+     */
+    public getConnectionStatus() {
+        return this.connectionService.getStatus();
     }
 }
