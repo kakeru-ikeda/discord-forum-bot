@@ -49,7 +49,7 @@ export class BotManager {
         );
 
         // UseCase の初期化
-        const createForumUseCase = new CreateForumUseCase(forumRepository);
+        const createForumUseCase = new CreateForumUseCase(forumRepository, messageRepository);
         const monitorMessageUseCase = new MonitorMessageUseCase(messageRepository);
 
         // Service の初期化

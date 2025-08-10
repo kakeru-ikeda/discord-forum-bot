@@ -38,20 +38,20 @@ export class ForumPost implements IForumPost {
 
     private static generateTitle(message: DiscordMessage, maxTitleLength: number): string {
         const contentPreview = message.getContentPreview(50);
-        const baseTitle = `[${message.authorName}] - [${contentPreview}]`;
+        const baseTitle = `${message.authorName} - [${contentPreview}]`;
 
         if (baseTitle.length <= maxTitleLength) {
             return baseTitle;
         }
 
         // タイトルが長すぎる場合は切り詰める
-        const authorPart = `[${message.authorName}] - [`;
+        const authorPart = `${message.authorName} - [`;
         const closeBracket = ']';
         const availableLength = maxTitleLength - authorPart.length - closeBracket.length - 3; // "..." の分
 
         if (availableLength <= 0) {
             // 作者名だけでも長すぎる場合
-            return `[${message.authorName.substring(0, maxTitleLength - 6)}...] - []`;
+            return `${message.authorName.substring(0, maxTitleLength - 6)}... - []`;
         }
 
         const truncatedContent = contentPreview.substring(0, availableLength) + '...';

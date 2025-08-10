@@ -15,4 +15,13 @@ export interface IForumRepository {
      * @returns アクセス可能な場合はtrue
      */
     isForumChannelAccessible(forumChannelId: string): Promise<boolean>;
+
+    /**
+     * フォーラム投稿のURLを取得する
+     * @param guildId ギルドID
+     * @param forumChannelId フォーラムチャンネルのID
+     * @param forumPostId フォーラム投稿のID
+     * @returns フォーラム投稿のURL
+     */
+    getForumPostUrl(guildId: string, forumChannelId: string, forumPostId: string): string;
 }

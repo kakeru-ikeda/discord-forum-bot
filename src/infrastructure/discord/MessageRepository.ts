@@ -88,4 +88,31 @@ export class MessageRepository implements IMessageRepository {
             return false;
         }
     }
+
+    async sendMessage(channelId: string, content: string): Promise<string> {
+        try {
+            const channel = await this.client.channels.fetch(channelId);
+
+            if (!channel || !channel.isTextBased()) {
+                throw new Error(`Channel ${channelId} is not found or not text-based`);
+            }
+
+            const sentMessage = await (channel as TextChannel).send(content);
+
+            this.logger.info('Message sent successfully', {
+                channelId,
+                messageId: sentMessage.id,
+                contentLength: content.length,
+            });
+
+            return sentMessage.id;
+        } catch (error) {
+            this.logger.error('Failed to send message', {
+                channelId,
+                contentLength: content.length,
+                error: error instanceof Error ? error.message : String(error),
+            });
+            throw error;
+        }
+    }
 }

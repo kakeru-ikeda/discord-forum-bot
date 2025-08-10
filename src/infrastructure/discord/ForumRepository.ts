@@ -90,4 +90,8 @@ export class ForumRepository implements IForumRepository {
             return false;
         }
     }
+
+    getForumPostUrl(guildId: string, forumChannelId: string, forumPostId: string): string {
+        return `https://discord.com/channels/${guildId}/${forumPostId}`;
+    }
 }

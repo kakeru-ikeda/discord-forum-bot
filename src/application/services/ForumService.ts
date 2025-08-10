@@ -1,4 +1,4 @@
-import { CreateForumUseCase } from '../../domain/usecases/CreateForumUseCase';
+import { CreateForumUseCase, CreateForumResult } from '../../domain/usecases/CreateForumUseCase';
 import { MonitorMessageUseCase } from '../../domain/usecases/MonitorMessageUseCase';
 import { DiscordMessage } from '../../domain/entities/DiscordMessage';
 import { ILogger } from '../../infrastructure/logger/Logger';
@@ -48,7 +48,7 @@ export class ForumService {
                 channelId: message.channelId,
             });
 
-            const forumPostId = await this.createForumUseCase.execute(
+            const result: CreateForumResult = await this.createForumUseCase.execute(
                 message,
                 this.config.forumChannelId,
                 this.config.maxTitleLength
@@ -56,14 +56,15 @@ export class ForumService {
 
             this.logger.info('Forum created successfully', {
                 messageId: message.id,
-                forumPostId,
+                forumPostId: result.forumPostId,
+                forumUrl: result.forumUrl,
                 authorId: message.authorId,
             });
 
             await this.alertNotifier.sendAlert(
                 'info',
                 'Forum Created',
-                `New forum post created from message by ${message.authorName}`,
+                `New forum post created from message by ${message.authorName}\nForum URL: ${result.forumUrl}`,
             );
 
         } catch (error) {
@@ -130,7 +131,7 @@ export class ForumService {
                 userId,
             });
 
-            const forumPostId = await this.createForumUseCase.execute(
+            const result: CreateForumResult = await this.createForumUseCase.execute(
                 message,
                 this.config.forumChannelId,
                 this.config.maxTitleLength
@@ -138,7 +139,8 @@ export class ForumService {
 
             this.logger.info('Forum created successfully from reaction', {
                 messageId,
-                forumPostId,
+                forumPostId: result.forumPostId,
+                forumUrl: result.forumUrl,
                 reactionUserId: userId,
                 originalAuthor: message.authorId,
             });
@@ -146,7 +148,7 @@ export class ForumService {
             await this.alertNotifier.sendAlert(
                 'info',
                 'Forum Created from Reaction',
-                `New forum post created from reaction by user ${userId} on message by ${message.authorName}`,
+                `New forum post created from reaction by user ${userId} on message by ${message.authorName}\nForum URL: ${result.forumUrl}`,
             );
 
         } catch (error) {
