@@ -3,11 +3,13 @@ import { MonitorMessageUseCase } from '../../domain/usecases/MonitorMessageUseCa
 import { DiscordMessage } from '../../domain/entities/DiscordMessage';
 import { ILogger } from '../../infrastructure/logger/Logger';
 import { IAlertNotifier } from '../../infrastructure/logger/AlertNotifier';
+import { EmojiConfig, EmojiUtils } from '../../infrastructure/discord/EmojiUtils';
+import { ReactionEmoji, GuildEmoji, ApplicationEmoji } from 'discord.js';
 
 export interface IForumServiceConfig {
     forumChannelId: string;
     questionPrefix: string;
-    triggerEmoji: string;
+    triggerEmoji: EmojiConfig;
     maxTitleLength: number;
 }
 
@@ -85,17 +87,17 @@ export class ForumService {
         }
     }
 
-    async handleReaction(messageId: string, channelId: string, emoji: string, userId: string): Promise<void> {
+    async handleReaction(messageId: string, channelId: string, emoji: ReactionEmoji | GuildEmoji | ApplicationEmoji, userId: string): Promise<void> {
         try {
             // トリガー絵文字でない場合は無視
-            if (emoji !== this.config.triggerEmoji) {
+            if (!EmojiUtils.matchesReaction(this.config.triggerEmoji, emoji)) {
                 return;
             }
 
             this.logger.debug('Processing reaction for forum creation', {
                 messageId,
                 channelId,
-                emoji,
+                emoji: EmojiUtils.getIdentifier(this.config.triggerEmoji),
                 userId,
             });
 
@@ -119,7 +121,8 @@ export class ForumService {
             if (!shouldCreate) {
                 this.logger.debug('Reaction does not meet forum creation criteria', {
                     messageId,
-                    emoji,
+                    emojiName: emoji.name,
+                    emojiId: emoji.id,
                 });
                 return;
             }
@@ -127,7 +130,8 @@ export class ForumService {
             this.logger.info('Creating forum for reaction', {
                 messageId,
                 channelId,
-                emoji,
+                emojiName: emoji.name,
+                emojiId: emoji.id,
                 userId,
             });
 
@@ -155,7 +159,8 @@ export class ForumService {
             this.logger.error('Failed to handle reaction for forum creation', {
                 messageId,
                 channelId,
-                emoji,
+                emojiName: emoji.name,
+                emojiId: emoji.id,
                 userId,
                 error: error instanceof Error ? error.message : String(error),
             });

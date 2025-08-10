@@ -1,4 +1,5 @@
 import * as dotenv from 'dotenv';
+import { EmojiConfig, EmojiUtils } from '../discord/EmojiUtils';
 
 // 環境変数を読み込み
 dotenv.config();
@@ -9,7 +10,7 @@ export interface IDiscordConfig {
     monitorChannelIds: string[];
     forumChannelId: string;
     alertChannelId: string;
-    triggerEmoji: string;
+    triggerEmoji: EmojiConfig;
     questionPrefix: string;
 }
 
@@ -45,7 +46,7 @@ export class ConfigManager {
                 monitorChannelIds: this.getEnvVar('MONITOR_CHANNEL_IDS').split(',').map(id => id.trim()),
                 forumChannelId: this.getEnvVar('FORUM_CHANNEL_ID'),
                 alertChannelId: this.getEnvVar('ALERT_CHANNEL_ID'),
-                triggerEmoji: this.getEnvVar('TRIGGER_EMOJI', '🙋'),
+                triggerEmoji: EmojiUtils.parseEmojiConfig(this.getEnvVar('TRIGGER_EMOJI', '🙋')),
                 questionPrefix: this.getEnvVar('QUESTION_PREFIX', '質問！'),
             },
             logging: {

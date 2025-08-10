@@ -37,8 +37,8 @@ export class ReactionHandler {
                 return;
             }
 
-            const emoji = reaction.emoji.name;
-            if (!emoji) {
+            const emojiName = reaction.emoji.name;
+            if (!emojiName) {
                 this.logger.debug('Reaction has no emoji name', {
                     messageId: reaction.message.id,
                     userId: user.id,
@@ -50,7 +50,8 @@ export class ReactionHandler {
                 messageId: reaction.message.id,
                 channelId: reaction.message.channelId,
                 guildId: reaction.message.guildId,
-                emoji,
+                emoji: emojiName,
+                emojiId: reaction.emoji.id,
                 userId: user.id,
                 reactionCount: reaction.count,
             });
@@ -59,7 +60,7 @@ export class ReactionHandler {
             await this.forumService.handleReaction(
                 reaction.message.id,
                 reaction.message.channelId,
-                emoji,
+                reaction.emoji,
                 user.id
             );
 

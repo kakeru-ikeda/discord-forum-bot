@@ -43,6 +43,10 @@ cp .env.example .env
 
 オプションの環境変数：
 - `TRIGGER_EMOJI`: フォーラム作成のトリガー絵文字（デフォルト: 🙋）
+  - Unicode絵文字: `🙋`
+  - デフォルト絵文字名: `:person_raising_hand:`
+  - カスタム絵文字: `<:emoji_name:123456789>`
+  - アニメーション絵文字: `<a:emoji_name:123456789>`
 - `QUESTION_PREFIX`: 質問として認識するプレフィックス（デフォルト: 質問！）
 - `LOG_LEVEL`: ログレベル（デフォルト: info）
 - その他のログとBot設定
@@ -82,6 +86,7 @@ npm start
 
 ### オプション環境変数
 - `TRIGGER_EMOJI`: フォーラム作成のトリガーとなる絵文字（デフォルト: 🙋）
+  - サポート形式: Unicode絵文字(`🙋`)、絵文字名(`:person_raising_hand:`)、カスタム絵文字(`<:name:id>`)、アニメーション絵文字(`<a:name:id>`)
 - `QUESTION_PREFIX`: 質問として認識するプレフィックス（デフォルト: 質問！）
 - `LOG_LEVEL`: ログレベル（debug, info, warn, error）（デフォルト: info）
 - `ENABLE_FILE_LOGGING`: ファイルログの有効化（デフォルト: true）

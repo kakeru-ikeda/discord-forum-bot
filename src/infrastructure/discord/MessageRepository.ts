@@ -2,6 +2,7 @@ import { Client, TextChannel, ChannelType } from 'discord.js';
 import { IMessageRepository } from '../../domain/repositories/IMessageRepository';
 import { DiscordMessage } from '../../domain/entities/DiscordMessage';
 import { ILogger } from '../logger/Logger';
+import { EmojiConfig, EmojiUtils } from './EmojiUtils';
 
 export class MessageRepository implements IMessageRepository {
     constructor(
@@ -49,7 +50,7 @@ export class MessageRepository implements IMessageRepository {
         return isMonitored;
     }
 
-    async hasReaction(messageId: string, channelId: string, emoji: string): Promise<boolean> {
+    async hasReaction(messageId: string, channelId: string, emojiConfig: EmojiConfig): Promise<boolean> {
         try {
             const channel = await this.client.channels.fetch(channelId);
 
@@ -66,23 +67,31 @@ export class MessageRepository implements IMessageRepository {
             }
 
             // 指定された絵文字のリアクションをチェック
-            const reaction = message.reactions.cache.find(r => r.emoji.name === emoji);
-            const hasReaction = reaction && reaction.count > 0;
+            let hasReaction = false;
+            let reactionCount = 0;
+
+            for (const reaction of message.reactions.cache.values()) {
+                if (EmojiUtils.matchesReaction(emojiConfig, reaction.emoji)) {
+                    hasReaction = true;
+                    reactionCount = reaction.count;
+                    break;
+                }
+            }
 
             this.logger.debug('Reaction check result', {
                 messageId,
                 channelId,
-                emoji,
+                emojiIdentifier: EmojiUtils.getIdentifier(emojiConfig),
                 hasReaction,
-                reactionCount: reaction?.count || 0,
+                reactionCount,
             });
 
-            return Boolean(hasReaction);
+            return hasReaction && reactionCount > 0;
         } catch (error) {
             this.logger.error('Failed to check reaction', {
                 messageId,
                 channelId,
-                emoji,
+                emojiIdentifier: EmojiUtils.getIdentifier(emojiConfig),
                 error: error instanceof Error ? error.message : String(error),
             });
             return false;

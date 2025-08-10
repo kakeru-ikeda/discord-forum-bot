@@ -1,5 +1,6 @@
 import { IMessageRepository } from '../repositories/IMessageRepository';
 import { DiscordMessage } from '../entities/DiscordMessage';
+import { EmojiConfig } from '../../infrastructure/discord/EmojiUtils';
 
 export class MonitorMessageUseCase {
     constructor(
@@ -9,7 +10,7 @@ export class MonitorMessageUseCase {
     async shouldCreateForum(
         message: DiscordMessage,
         questionPrefix: string,
-        triggerEmoji: string
+        triggerEmoji: EmojiConfig
     ): Promise<boolean> {
         // 監視対象のチャンネルかチェック
         const isMonitored = await this.messageRepository.isMonitoredChannel(message.channelId);

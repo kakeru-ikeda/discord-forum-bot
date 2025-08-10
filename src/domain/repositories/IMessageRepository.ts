@@ -1,4 +1,5 @@
 import { DiscordMessage } from '../entities/DiscordMessage';
+import { EmojiConfig } from '../../infrastructure/discord/EmojiUtils';
 
 export interface IMessageRepository {
     /**
@@ -20,10 +21,10 @@ export interface IMessageRepository {
      * メッセージにリアクションが付いているかどうかを確認する
      * @param messageId メッセージID
      * @param channelId チャンネルID
-     * @param emoji 絵文字
+     * @param emojiConfig 絵文字設定
      * @returns リアクションが付いている場合はtrue
      */
-    hasReaction(messageId: string, channelId: string, emoji: string): Promise<boolean>;
+    hasReaction(messageId: string, channelId: string, emojiConfig: EmojiConfig): Promise<boolean>;
 
     /**
      * 指定されたチャンネルにメッセージを送信する
