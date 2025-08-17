@@ -17,6 +17,8 @@
 - エラーハンドリングはtry-catchブロックで行う
 - ログ出力は必ずLoggerクラス経由で行う
 - Discord APIの呼び出しは必ずリポジトリ層で実装
+- 設定値アクセスは必ずConfigManager.getInstance().getConfig()経由で行う
+- 新しい設定項目追加時はインターフェース定義と検証ロジックを同時に実装
 
 ## 主要機能
 1. **メッセージ監視**: 「質問！」で始まる投稿の検知
@@ -25,11 +27,37 @@
 4. **エラーアラート**: 例外発生時のDiscordチャンネル通知
 
 ## 依存関係
-- discord.js v14
+- discord.js v14 (Discord API操作)
 - winston (ログ機能)
-- config (設定管理)
 - reflect-metadata (デコレータサポート)
 
-## 設定
-- 環境変数を使用して設定値を管理
-- BOTトークンやチャンネルIDは適切に設定が必要
+## 設定管理
+- **JSONファイルベース**: `config/default.json`を使用した設定管理
+- **型安全性**: TypeScriptインターfaces（IDiscordConfig、ILoggingConfig等）による設定値の検証
+- **ConfigManagerクラス**: シングルトンパターンで設定値へのアクセスを一元管理
+- **セキュリティ**: 本番設定ファイル（default.json）はgitignoreで除外
+- **テンプレート**: `config/default.json.example`でサンプル設定を提供
+
+## 設定ファイル構造
+```json
+{
+  "discord": {
+    "token": "BOTトークン",
+    "guildId": "サーバーID", 
+    "monitorChannelIds": ["監視チャンネルIDの配列"],
+    "forumChannelId": "フォーラムチャンネルID",
+    "alertChannelId": "アラートチャンネルID",
+    "triggerEmoji": "トリガー絵文字",
+    "questionPrefix": "質問プレフィックス"
+  },
+  "logging": { "level": "ログレベル", ... },
+  "bot": { "maxTitleLength": 100, ... },
+  "connection": { "healthCheckInterval": 30000, ... }
+}
+```
+
+## コード生成・修正時の注意点
+- 設定値アクセスは必ずConfigManager経由で行う
+- 新しい設定項目追加時はインターフェース定義も更新
+- 設定ファイルの検証ロジックも適切に実装
+- 環境変数は使用禁止（JSONファイル設定のみ使用）
