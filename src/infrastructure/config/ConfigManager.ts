@@ -1,8 +1,6 @@
-import * as dotenv from 'dotenv';
+import * as fs from 'fs';
+import * as path from 'path';
 import { EmojiConfig, EmojiUtils } from '../discord/EmojiUtils';
-
-// 環境変数を読み込み
-dotenv.config();
 
 export interface IDiscordConfig {
     token: string;
@@ -53,89 +51,87 @@ export class ConfigManager {
     private readonly appConfig: IAppConfig;
 
     private constructor() {
-        this.validateRequiredEnvVars();
-
-        this.appConfig = {
-            discord: {
-                token: this.getEnvVar('DISCORD_TOKEN'),
-                guildId: this.getEnvVar('GUILD_ID'),
-                monitorChannelIds: this.getEnvVar('MONITOR_CHANNEL_IDS').split(',').map(id => id.trim()),
-                forumChannelId: this.getEnvVar('FORUM_CHANNEL_ID'),
-                alertChannelId: this.getEnvVar('ALERT_CHANNEL_ID'),
-                triggerEmoji: EmojiUtils.parseEmojiConfig(this.getEnvVar('TRIGGER_EMOJI', '🙋')),
-                questionPrefix: this.getEnvVar('QUESTION_PREFIX', '質問！'),
-            },
-            logging: {
-                level: this.getEnvVar('LOG_LEVEL', 'info'),
-                enableFileLogging: this.getBooleanEnvVar('ENABLE_FILE_LOGGING', true),
-                enableDiscordAlerts: this.getBooleanEnvVar('ENABLE_DISCORD_ALERTS', true),
-                logFilePath: this.getEnvVar('LOG_FILE_PATH', './logs/bot.log'),
-            },
-            bot: {
-                maxTitleLength: this.getNumberEnvVar('MAX_TITLE_LENGTH', 100),
-                maxContentPreview: this.getNumberEnvVar('MAX_CONTENT_PREVIEW', 200),
-            },
-            connection: {
-                healthCheckInterval: this.getNumberEnvVar('HEALTH_CHECK_INTERVAL', 30000),
-                reconnectionStrategy: this.getEnvVar('RECONNECTION_STRATEGY', 'exponential') as 'exponential' | 'fixed',
-                exponentialBackoff: {
-                    baseDelay: this.getNumberEnvVar('EXPONENTIAL_BASE_DELAY', 1000),
-                    maxDelay: this.getNumberEnvVar('EXPONENTIAL_MAX_DELAY', 60000),
-                    maxRetries: this.getNumberEnvVar('EXPONENTIAL_MAX_RETRIES', 10),
-                    backoffMultiplier: this.getNumberEnvVar('EXPONENTIAL_BACKOFF_MULTIPLIER', 2),
-                },
-                fixedInterval: {
-                    interval: this.getNumberEnvVar('FIXED_INTERVAL', 5000),
-                    maxRetries: this.getNumberEnvVar('FIXED_MAX_RETRIES', 20),
-                },
-            },
-        };
+        this.appConfig = this.loadConfig();
     }
 
-    private validateRequiredEnvVars(): void {
-        const required = [
-            'DISCORD_TOKEN',
-            'GUILD_ID',
-            'MONITOR_CHANNEL_IDS',
-            'FORUM_CHANNEL_ID',
-            'ALERT_CHANNEL_ID'
+    private loadConfig(): IAppConfig {
+        const configPath = path.join(process.cwd(), 'config', 'default.json');
+
+        if (!fs.existsSync(configPath)) {
+            throw new Error(`Configuration file not found at: ${configPath}`);
+        }
+
+        try {
+            const configData = fs.readFileSync(configPath, 'utf8');
+            const config = JSON.parse(configData);
+
+            // 設定の検証
+            this.validateConfig(config);
+
+            // EmojiConfigの変換
+            return {
+                discord: {
+                    ...config.discord,
+                    triggerEmoji: EmojiUtils.parseEmojiConfig(config.discord.triggerEmoji)
+                },
+                logging: config.logging,
+                bot: config.bot,
+                connection: config.connection
+            };
+        } catch (error) {
+            throw new Error(`Failed to load configuration: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    }
+
+    private validateConfig(config: any): void {
+        const requiredPaths = [
+            'discord.token',
+            'discord.guildId',
+            'discord.monitorChannelIds',
+            'discord.forumChannelId',
+            'discord.alertChannelId'
         ];
 
-        const missing = required.filter(key => !process.env[key]);
-        if (missing.length > 0) {
-            throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
-        }
-    }
-
-    private getEnvVar(key: string, defaultValue?: string): string {
-        const value = process.env[key];
-        if (value === undefined) {
-            if (defaultValue !== undefined) {
-                return defaultValue;
+        for (const path of requiredPaths) {
+            const value = this.getNestedValue(config, path);
+            if (value === undefined || value === null || value === '') {
+                throw new Error(`Required configuration property is missing or empty: ${path}`);
             }
-            throw new Error(`Environment variable ${key} is required but not set`);
         }
-        return value;
+
+        // 配列の検証
+        if (!Array.isArray(config.discord.monitorChannelIds) || config.discord.monitorChannelIds.length === 0) {
+            throw new Error('discord.monitorChannelIds must be a non-empty array');
+        }
+
+        // 数値の検証
+        const numericPaths = [
+            'bot.maxTitleLength',
+            'bot.maxContentPreview',
+            'connection.healthCheckInterval',
+            'connection.exponentialBackoff.baseDelay',
+            'connection.exponentialBackoff.maxDelay',
+            'connection.exponentialBackoff.maxRetries',
+            'connection.exponentialBackoff.backoffMultiplier',
+            'connection.fixedInterval.interval',
+            'connection.fixedInterval.maxRetries'
+        ];
+
+        for (const path of numericPaths) {
+            const value = this.getNestedValue(config, path);
+            if (typeof value !== 'number' || isNaN(value)) {
+                throw new Error(`Configuration property must be a valid number: ${path}`);
+            }
+        }
+
+        // 戦略の検証
+        if (!['exponential', 'fixed'].includes(config.connection.reconnectionStrategy)) {
+            throw new Error('connection.reconnectionStrategy must be either "exponential" or "fixed"');
+        }
     }
 
-    private getBooleanEnvVar(key: string, defaultValue: boolean): boolean {
-        const value = process.env[key];
-        if (value === undefined) {
-            return defaultValue;
-        }
-        return value.toLowerCase() === 'true' || value === '1';
-    }
-
-    private getNumberEnvVar(key: string, defaultValue: number): number {
-        const value = process.env[key];
-        if (value === undefined) {
-            return defaultValue;
-        }
-        const num = parseInt(value, 10);
-        if (isNaN(num)) {
-            throw new Error(`Environment variable ${key} must be a valid number, got: ${value}`);
-        }
-        return num;
+    private getNestedValue(obj: any, path: string): any {
+        return path.split('.').reduce((current, key) => current?.[key], obj);
     }
 
     public static getInstance(): ConfigManager {

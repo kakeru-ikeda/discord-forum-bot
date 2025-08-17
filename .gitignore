@@ -65,7 +65,10 @@ typings/
 # Yarn Integrity file
 .yarn-integrity
 
-# dotenv environment variables file
+# Configuration files with sensitive data
+config/default.json
+
+# Legacy environment files
 .env
 .env.test
 .env.local

@@ -1,0 +1,35 @@
+{
+  "discord": {
+    "token": "YOUR_DISCORD_BOT_TOKEN_HERE",
+    "guildId": "YOUR_GUILD_ID_HERE",
+    "monitorChannelIds": ["YOUR_MONITOR_CHANNEL_ID_HERE"],
+    "forumChannelId": "YOUR_FORUM_CHANNEL_ID_HERE",
+    "alertChannelId": "YOUR_ALERT_CHANNEL_ID_HERE",
+    "triggerEmoji": "🙋",
+    "questionPrefix": "質問！"
+  },
+  "logging": {
+    "level": "info",
+    "enableFileLogging": true,
+    "enableDiscordAlerts": true,
+    "logFilePath": "./logs/bot.log"
+  },
+  "bot": {
+    "maxTitleLength": 100,
+    "maxContentPreview": 200
+  },
+  "connection": {
+    "healthCheckInterval": 30000,
+    "reconnectionStrategy": "exponential",
+    "exponentialBackoff": {
+      "baseDelay": 1000,
+      "maxDelay": 60000,
+      "maxRetries": 10,
+      "backoffMultiplier": 2
+    },
+    "fixedInterval": {
+      "interval": 5000,
+      "maxRetries": 20
+    }
+  }
+}

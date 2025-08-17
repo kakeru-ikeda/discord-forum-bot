@@ -16,6 +16,9 @@ RUN npm install -g typescript
 # ソースコードをコピー
 COPY . .
 
+# 設定ファイルの例をコピー（実際の設定ファイルはボリュームマウントで提供）
+COPY config/default.json.example ./config/
+
 # TypeScriptをビルド
 RUN npm run build
 

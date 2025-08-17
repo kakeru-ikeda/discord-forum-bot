@@ -26,28 +26,28 @@ TypeScript + Discord.js v14を使用したDiscord botで、フォーラムチャ
 npm install
 ```
 
-### 2. 環境変数の設定
+### 2. 設定ファイルの作成
 
-`.env.example`ファイルを`.env`にコピーし、以下の値を設定してください：
+`config/default.json.example`ファイルを`config/default.json`にコピーし、以下の値を設定してください：
 
 ```bash
-cp .env.example .env
+cp config/default.json.example config/default.json
 ```
 
-必須の環境変数：
-- `DISCORD_TOKEN`: Discord botのトークン
-- `GUILD_ID`: 対象サーバーのID
-- `MONITOR_CHANNEL_IDS`: 監視するチャンネルのIDリスト（カンマ区切り）
-- `FORUM_CHANNEL_ID`: フォーラム投稿先のチャンネルID
-- `ALERT_CHANNEL_ID`: アラート通知先のチャンネルID
+必須の設定項目：
+- `discord.token`: Discord botのトークン
+- `discord.guildId`: 対象サーバーのID
+- `discord.monitorChannelIds`: 監視するチャンネルのIDリスト（配列形式）
+- `discord.forumChannelId`: フォーラム投稿先のチャンネルID
+- `discord.alertChannelId`: アラート通知先のチャンネルID
 
-オプションの環境変数：
-- `TRIGGER_EMOJI`: フォーラム作成のトリガー絵文字（デフォルト: 🙋）
+オプションの設定項目：
+- `discord.triggerEmoji`: フォーラム作成のトリガー絵文字（デフォルト: 🙋）
   - Unicode絵文字: `🙋`
   - デフォルト絵文字名: `:person_raising_hand:`
   - カスタム絵文字: `<:emoji_name:123456789>`
   - アニメーション絵文字: `<a:emoji_name:123456789>`
-- `QUESTION_PREFIX`: 質問として認識するプレフィックス（デフォルト: 質問！）
+- `discord.questionPrefix`: 質問として認識するプレフィックス（デフォルト: 質問！）
 - `LOG_LEVEL`: ログレベル（デフォルト: info）
 
 接続管理設定：

@@ -9,12 +9,10 @@ services:
     restart: unless-stopped
     environment:
       - NODE_ENV=production
-    env_file:
-      - .env
     volumes:
       # ログファイルを永続化
       - ./logs:/app/logs
-      # 設定ファイルをマウント（必要に応じて）
+      # 設定ファイルをマウント
       - ./config:/app/config:ro
     networks:
       - discord-bot-network
