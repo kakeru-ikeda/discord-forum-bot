@@ -13,7 +13,7 @@ export interface IDiscordConfig {
     channelMappings: IChannelMapping[];
     alertChannelId: string;
     triggerEmoji: EmojiConfig;
-    questionPrefix: string;
+    questionPrefix: string[];
 }
 
 export interface ILoggingConfig {

@@ -9,7 +9,7 @@ import { IMessageRepository } from '../../domain/repositories/IMessageRepository
 import { ConfigManager } from '../../infrastructure/config/ConfigManager';
 
 export interface IForumServiceConfig {
-    questionPrefix: string;
+    questionPrefix: string[];
     triggerEmoji: EmojiConfig;
     maxTitleLength: number;
 }

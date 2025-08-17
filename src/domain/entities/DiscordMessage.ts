@@ -44,8 +44,9 @@ export class DiscordMessage implements IDiscordMessage {
         return `https://discord.com/channels/${this.guildId}/${this.channelId}/${this.id}`;
     }
 
-    public isQuestionMessage(questionPrefix: string): boolean {
-        return this.content.trim().startsWith(questionPrefix);
+    public isQuestionMessage(questionPrefixes: string[]): boolean {
+        const trimmedContent = this.content.trim();
+        return questionPrefixes.some(prefix => trimmedContent.startsWith(prefix));
     }
 
     public getContentPreview(maxLength: number): string {

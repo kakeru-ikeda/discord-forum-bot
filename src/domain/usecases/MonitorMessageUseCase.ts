@@ -9,7 +9,7 @@ export class MonitorMessageUseCase {
 
     async shouldCreateForum(
         message: DiscordMessage,
-        questionPrefix: string,
+        questionPrefixes: string[],
         triggerEmoji: EmojiConfig
     ): Promise<boolean> {
         // 監視対象のチャンネルかチェック
@@ -19,7 +19,7 @@ export class MonitorMessageUseCase {
         }
 
         // 質問プレフィックスで始まるかチェック
-        if (message.isQuestionMessage(questionPrefix)) {
+        if (message.isQuestionMessage(questionPrefixes)) {
             return true;
         }
 

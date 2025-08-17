@@ -14,7 +14,7 @@
     ],
     "alertChannelId": "YOUR_ALERT_CHANNEL_ID_HERE",
     "triggerEmoji": "🙋",
-    "questionPrefix": "質問！"
+    "questionPrefix": ["質問！", "質問", "Q:"]
   },
   "logging": {
     "level": "info",

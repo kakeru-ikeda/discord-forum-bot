@@ -68,7 +68,7 @@ cp config/default.json.example config/default.json
   - デフォルト絵文字名: `:person_raising_hand:`
   - カスタム絵文字: `<:emoji_name:123456789>`
   - アニメーション絵文字: `<a:emoji_name:123456789>`
-- `discord.questionPrefix`: 質問として認識するプレフィックス（デフォルト: 質問！）
+- `discord.questionPrefix`: 質問として認識するプレフィックスの配列（デフォルト: ["質問！", "質問", "Q:"]）
 - `LOG_LEVEL`: ログレベル（デフォルト: info）
 
 接続管理設定：
