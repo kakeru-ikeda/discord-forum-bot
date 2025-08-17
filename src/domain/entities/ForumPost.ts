@@ -67,7 +67,7 @@ export class ForumPost implements IForumPost {
             '**元の投稿:**',
             message.content,
             '',
-            `**投稿者:** ${message.authorNickname}`,
+            `**投稿者:** <@${message.authorId}>`,
             `**元のメッセージ:** ${message.getMessageUrl()}`,
             `**投稿時刻:** ${message.timestamp.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}`
         ];
