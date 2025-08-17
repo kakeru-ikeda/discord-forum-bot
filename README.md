@@ -120,13 +120,7 @@ npm start
 
 ### セットアップ
 
-1. 環境変数ファイルを準備：
-```bash
-cp .env.example .env
-# .env ファイルを編集して実際の値を設定
-```
-
-2. Docker Compose を使用して起動：
+1. Docker Compose を使用して起動：
 
 ```bash
 # Docker Compose v2 を使用
