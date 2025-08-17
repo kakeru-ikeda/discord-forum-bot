@@ -164,4 +164,38 @@ export class MessageRepository implements IMessageRepository {
             return false;
         }
     }
+
+    async replyToMessage(messageId: string, channelId: string, content: string): Promise<string> {
+        try {
+            const channel = await this.client.channels.fetch(channelId);
+
+            if (!channel || !channel.isTextBased()) {
+                throw new Error(`Channel ${channelId} is not a text-based channel`);
+            }
+
+            const message = await channel.messages.fetch(messageId);
+            if (!message) {
+                throw new Error(`Message ${messageId} not found in channel ${channelId}`);
+            }
+
+            const reply = await message.reply(content);
+
+            this.logger.info('Reply sent successfully', {
+                originalMessageId: messageId,
+                replyMessageId: reply.id,
+                channelId,
+                content: content.substring(0, 100), // 最初の100文字をログ
+            });
+
+            return reply.id;
+        } catch (error) {
+            this.logger.error('Failed to send reply', {
+                messageId,
+                channelId,
+                content: content.substring(0, 100),
+                error: error instanceof Error ? error.message : String(error),
+            });
+            throw error;
+        }
+    }
 }

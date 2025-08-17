@@ -9,7 +9,8 @@ export class ForumCreationStatus {
         public readonly forumPostId: string,
         public readonly forumUrl: string,
         public readonly createdAt: Date,
-        public readonly createdBy: string // 最初にフォーラムを作成したユーザーID
+        public readonly createdBy: string, // 最初にフォーラムを作成したユーザーID
+        public readonly notificationMessageId?: string // Botが投稿した通知メッセージのID
     ) { }
 
     /**
@@ -21,7 +22,8 @@ export class ForumCreationStatus {
         guildId: string,
         forumPostId: string,
         forumUrl: string,
-        createdBy: string
+        createdBy: string,
+        notificationMessageId?: string
     ): ForumCreationStatus {
         return new ForumCreationStatus(
             messageId,
@@ -30,7 +32,24 @@ export class ForumCreationStatus {
             forumPostId,
             forumUrl,
             new Date(),
-            createdBy
+            createdBy,
+            notificationMessageId
+        );
+    }
+
+    /**
+     * 通知メッセージIDを追加した新しいインスタンスを作成
+     */
+    withNotificationMessageId(notificationMessageId: string): ForumCreationStatus {
+        return new ForumCreationStatus(
+            this.messageId,
+            this.channelId,
+            this.guildId,
+            this.forumPostId,
+            this.forumUrl,
+            this.createdAt,
+            this.createdBy,
+            notificationMessageId
         );
     }
 }

@@ -46,6 +46,18 @@ export class ForumCreationStatusStorage {
     }
 
     /**
+     * フォーラム投稿IDで検索
+     */
+    async getByForumPostId(forumPostId: string): Promise<ForumCreationStatus | null> {
+        for (const status of this.storage.values()) {
+            if (status.forumPostId === forumPostId) {
+                return status;
+            }
+        }
+        return null;
+    }
+
+    /**
      * ストレージをクリア
      */
     async clear(): Promise<void> {

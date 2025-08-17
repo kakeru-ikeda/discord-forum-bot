@@ -52,20 +52,21 @@ export class CreateForumUseCase {
         // フォーラムのURLを生成
         const forumUrl = this.forumRepository.getForumPostUrl(message.guildId, forumChannelId, forumPostId);
 
-        // フォーラム作成状態を記録
+        // 元の投稿チャンネルに指定されたメッセージを送信
+        const notificationMessage = `おぅりゃりゃー！　とぉりゃりゃー！\n${forumUrl}`;
+        const notificationMessageId = await this.messageRepository.sendMessage(message.channelId, notificationMessage);
+
+        // フォーラム作成状態を記録（通知メッセージIDも含める）
         const creationStatus = ForumCreationStatus.create(
             message.id,
             message.channelId,
             message.guildId,
             forumPostId,
             forumUrl,
-            triggeredBy || message.authorId
+            triggeredBy || message.authorId,
+            notificationMessageId
         );
         await this.forumRepository.saveForumCreationStatus(creationStatus);
-
-        // 元の投稿チャンネルに指定されたメッセージを送信
-        const notificationMessage = `おぅりゃりゃー！　とぉりゃりゃー！\n${forumUrl}`;
-        await this.messageRepository.sendMessage(message.channelId, notificationMessage);
 
         return {
             forumPostId,

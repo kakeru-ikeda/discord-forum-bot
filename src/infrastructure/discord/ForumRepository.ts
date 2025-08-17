@@ -129,4 +129,16 @@ export class ForumRepository implements IForumRepository {
             throw error;
         }
     }
+
+    async getForumCreationStatusByForumPostId(forumPostId: string): Promise<ForumCreationStatus | null> {
+        try {
+            return await this.statusStorage.getByForumPostId(forumPostId);
+        } catch (error) {
+            this.logger.error('Failed to get forum creation status by forum post ID', {
+                forumPostId,
+                error: error instanceof Error ? error.message : String(error),
+            });
+            return null;
+        }
+    }
 }

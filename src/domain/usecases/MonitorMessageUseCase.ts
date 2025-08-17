@@ -1,10 +1,13 @@
 import { IMessageRepository } from '../repositories/IMessageRepository';
+import { IForumRepository } from '../repositories/IForumRepository';
 import { DiscordMessage } from '../entities/DiscordMessage';
+import { ForumCreationStatus } from '../entities/ForumCreationStatus';
 import { EmojiConfig } from '../../infrastructure/discord/EmojiUtils';
 
 export class MonitorMessageUseCase {
     constructor(
-        private readonly messageRepository: IMessageRepository
+        private readonly messageRepository: IMessageRepository,
+        private readonly forumRepository: IForumRepository
     ) { }
 
     async shouldCreateForum(
@@ -35,5 +38,9 @@ export class MonitorMessageUseCase {
 
     async getMessage(messageId: string, channelId: string): Promise<DiscordMessage | null> {
         return await this.messageRepository.getMessage(messageId, channelId);
+    }
+
+    async getForumCreationStatusByForumPostId(forumPostId: string): Promise<ForumCreationStatus | null> {
+        return await this.forumRepository.getForumCreationStatusByForumPostId(forumPostId);
     }
 }

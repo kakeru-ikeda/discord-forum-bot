@@ -92,4 +92,14 @@ export class DiscordClient {
             }
         });
     }
+
+    public addThreadHandler(handler: (oldThread: any, newThread: any) => Promise<void>): void {
+        this.client.on('threadUpdate', async (oldThread, newThread) => {
+            try {
+                await handler(oldThread, newThread);
+            } catch (error) {
+                this.logger.error('Error in thread handler', { error: error instanceof Error ? error.message : String(error) });
+            }
+        });
+    }
 }

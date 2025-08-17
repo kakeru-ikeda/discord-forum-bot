@@ -42,4 +42,13 @@ export interface IMessageRepository {
      * @returns 成功した場合はtrue
      */
     addReaction(messageId: string, channelId: string, emojiConfig: EmojiConfig): Promise<boolean>;
+
+    /**
+     * 指定されたメッセージに返信する
+     * @param messageId 返信先のメッセージID
+     * @param channelId チャンネルID
+     * @param content 返信内容
+     * @returns 送信された返信メッセージID
+     */
+    replyToMessage(messageId: string, channelId: string, content: string): Promise<string>;
 }

@@ -271,4 +271,67 @@ export class ForumService {
             // エラーが発生してもアプリケーションは継続
         }
     }
+
+    async handleForumArchived(forumPostId: string, forumChannelId: string): Promise<void> {
+        try {
+            this.logger.debug('Processing forum archive notification', {
+                forumPostId,
+                forumChannelId,
+            });
+
+            // フォーラム作成状態を取得
+            const creationStatus = await this.monitorMessageUseCase.getForumCreationStatusByForumPostId(forumPostId);
+            if (!creationStatus) {
+                this.logger.debug('No creation status found for archived forum', {
+                    forumPostId,
+                });
+                return;
+            }
+
+            if (!creationStatus.notificationMessageId) {
+                this.logger.debug('No notification message ID found for archived forum', {
+                    forumPostId,
+                    messageId: creationStatus.messageId,
+                });
+                return;
+            }
+
+            // 元の通知メッセージに返信
+            const closureMessage = '毒気を抜いて平和的解決が図られました！（クローズ済）';
+            await this.messageRepository.replyToMessage(
+                creationStatus.notificationMessageId,
+                creationStatus.channelId,
+                closureMessage
+            );
+
+            this.logger.info('Forum closure notification sent', {
+                forumPostId,
+                originalMessageId: creationStatus.messageId,
+                notificationMessageId: creationStatus.notificationMessageId,
+                channelId: creationStatus.channelId,
+            });
+
+            await this.alertNotifier.sendAlert(
+                'info',
+                'Forum Closed',
+                `Forum post was archived and closure notification sent\nForum URL: ${creationStatus.forumUrl}`,
+            );
+
+        } catch (error) {
+            this.logger.error('Failed to handle forum archive notification', {
+                forumPostId,
+                forumChannelId,
+                error: error instanceof Error ? error.message : String(error),
+            });
+
+            await this.alertNotifier.sendAlert(
+                'error',
+                'Forum Closure Notification Failed',
+                `Failed to send closure notification for archived forum ${forumPostId}`,
+                error instanceof Error ? error : new Error(String(error))
+            );
+
+            // エラーが発生してもアプリケーションは継続
+        }
+    }
 }

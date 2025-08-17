@@ -39,4 +39,11 @@ export interface IForumRepository {
      * @param status フォーラム作成状態
      */
     saveForumCreationStatus(status: ForumCreationStatus): Promise<void>;
+
+    /**
+     * フォーラム投稿IDから作成状態を取得する
+     * @param forumPostId フォーラム投稿ID
+     * @returns フォーラム作成状態（見つからない場合はnull）
+     */
+    getForumCreationStatusByForumPostId(forumPostId: string): Promise<ForumCreationStatus | null>;
 }

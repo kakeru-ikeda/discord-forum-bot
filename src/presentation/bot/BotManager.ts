@@ -11,6 +11,7 @@ import { ForumService } from '../../application/services/ForumService';
 import { ConnectionService } from '../../application/services/ConnectionService';
 import { MessageHandler } from '../../application/handlers/MessageHandler';
 import { ReactionHandler } from '../../application/handlers/ReactionHandler';
+import { ThreadHandler } from '../../application/handlers/ThreadHandler';
 import { DiscordConnectionManager } from '../../infrastructure/connection/DiscordConnectionManager';
 import { ExponentialBackoffStrategy, FixedIntervalStrategy } from '../../infrastructure/connection/ReconnectionStrategy';
 import { ForumCreationStatusStorage } from '../../infrastructure/storage/ForumCreationStatusStorage';
@@ -21,6 +22,7 @@ export class BotManager {
     private alertNotifier: AlertNotifier;
     private messageHandler: MessageHandler;
     private reactionHandler: ReactionHandler;
+    private threadHandler: ThreadHandler;
     private connectionService!: ConnectionService;
     private isShuttingDown: boolean = false;
 
@@ -59,7 +61,7 @@ export class BotManager {
 
         // UseCase の初期化
         const createForumUseCase = new CreateForumUseCase(forumRepository, messageRepository);
-        const monitorMessageUseCase = new MonitorMessageUseCase(messageRepository);
+        const monitorMessageUseCase = new MonitorMessageUseCase(messageRepository, forumRepository);
 
         // Service の初期化
         const forumService = new ForumService(
@@ -78,6 +80,7 @@ export class BotManager {
         // Handler の初期化
         this.messageHandler = new MessageHandler(forumService, this.logger);
         this.reactionHandler = new ReactionHandler(forumService, this.logger);
+        this.threadHandler = new ThreadHandler(forumService, this.logger);
 
         // 接続管理機能の初期化
         this.setupConnectionManagement();
@@ -199,6 +202,10 @@ export class BotManager {
 
             this.discordClient.addReactionHandler(async (reaction, user) => {
                 await this.reactionHandler.handleReaction(reaction, user);
+            });
+
+            this.discordClient.addThreadHandler(async (oldThread, newThread) => {
+                await this.threadHandler.handleThreadUpdate(oldThread, newThread);
             });
 
             // Discord にログイン
