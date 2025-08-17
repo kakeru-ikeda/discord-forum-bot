@@ -37,9 +37,30 @@ cp config/default.json.example config/default.json
 必須の設定項目：
 - `discord.token`: Discord botのトークン
 - `discord.guildId`: 対象サーバーのID
-- `discord.monitorChannelIds`: 監視するチャンネルのIDリスト（配列形式）
-- `discord.forumChannelId`: フォーラム投稿先のチャンネルID
+- `discord.channelMappings`: 監視チャンネルとフォーラムチャンネルのマッピング（配列形式）
+  - `monitorChannelId`: 監視するチャンネルのID
+  - `forumChannelId`: 対応するフォーラム投稿先のチャンネルID
 - `discord.alertChannelId`: アラート通知先のチャンネルID
+
+設定例：
+```json
+{
+  "discord": {
+    "channelMappings": [
+      {
+        "monitorChannelId": "123456789012345678",
+        "forumChannelId": "987654321098765432"
+      },
+      {
+        "monitorChannelId": "111111111111111111",
+        "forumChannelId": "222222222222222222"
+      }
+    ]
+  }
+}
+```
+
+この設定により、各監視チャンネルで質問やトリガー絵文字が検知されたとき、対応するフォーラムチャンネルにフォーラムが作成されます。
 
 オプションの設定項目：
 - `discord.triggerEmoji`: フォーラム作成のトリガー絵文字（デフォルト: 🙋）

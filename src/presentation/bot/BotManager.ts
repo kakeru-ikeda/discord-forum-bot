@@ -54,7 +54,6 @@ export class BotManager {
 
         const messageRepository = new MessageRepository(
             this.discordClient.getClient(),
-            appConfig.discord.monitorChannelIds,
             this.logger
         );
 
@@ -68,7 +67,6 @@ export class BotManager {
             monitorMessageUseCase,
             messageRepository,
             {
-                forumChannelId: appConfig.discord.forumChannelId,
                 questionPrefix: appConfig.discord.questionPrefix,
                 triggerEmoji: appConfig.discord.triggerEmoji,
                 maxTitleLength: appConfig.bot.maxTitleLength,
@@ -177,11 +175,15 @@ export class BotManager {
             const appConfig = config.getConfig();
 
             // 設定情報をログに出力（機密情報は除く）
+            const channelMappings = config.getChannelMappings();
             this.logger.info('Bot Configuration:', {
                 environment: `${environment}`,
                 guildId: discordConfig.guildId,
-                monitorChannels: discordConfig.monitorChannelIds.length,
-                forumChannelId: discordConfig.forumChannelId,
+                channelMappings: channelMappings.length,
+                mappingDetails: channelMappings.map(mapping => ({
+                    monitorChannelId: mapping.monitorChannelId,
+                    forumChannelId: mapping.forumChannelId
+                })),
                 alertChannelId: discordConfig.alertChannelId,
                 questionPrefix: discordConfig.questionPrefix,
                 triggerEmoji: discordConfig.triggerEmoji,

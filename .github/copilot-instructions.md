@@ -38,24 +38,6 @@
 - **セキュリティ**: 本番設定ファイル（default.json）はgitignoreで除外
 - **テンプレート**: `config/default.json.example`でサンプル設定を提供
 
-## 設定ファイル構造
-```json
-{
-  "discord": {
-    "token": "BOTトークン",
-    "guildId": "サーバーID", 
-    "monitorChannelIds": ["監視チャンネルIDの配列"],
-    "forumChannelId": "フォーラムチャンネルID",
-    "alertChannelId": "アラートチャンネルID",
-    "triggerEmoji": "トリガー絵文字",
-    "questionPrefix": "質問プレフィックス"
-  },
-  "logging": { "level": "ログレベル", ... },
-  "bot": { "maxTitleLength": 100, ... },
-  "connection": { "healthCheckInterval": 30000, ... }
-}
-```
-
 ## コード生成・修正時の注意点
 - 設定値アクセスは必ずConfigManager経由で行う
 - 新しい設定項目追加時はインターフェース定義も更新

@@ -3,11 +3,11 @@ import { IMessageRepository } from '../../domain/repositories/IMessageRepository
 import { DiscordMessage } from '../../domain/entities/DiscordMessage';
 import { ILogger } from '../logger/Logger';
 import { EmojiConfig, EmojiUtils } from './EmojiUtils';
+import { ConfigManager } from '../config/ConfigManager';
 
 export class MessageRepository implements IMessageRepository {
     constructor(
         private readonly client: Client,
-        private readonly monitorChannelIds: string[],
         private readonly logger: ILogger
     ) { }
 
@@ -39,12 +39,14 @@ export class MessageRepository implements IMessageRepository {
     }
 
     async isMonitoredChannel(channelId: string): Promise<boolean> {
-        const isMonitored = this.monitorChannelIds.includes(channelId);
+        const configManager = ConfigManager.getInstance();
+        const monitorChannelIds = configManager.getMonitorChannelIds();
+        const isMonitored = monitorChannelIds.includes(channelId);
 
         this.logger.debug('Channel monitoring check', {
             channelId,
             isMonitored,
-            monitorChannelIds: this.monitorChannelIds,
+            monitorChannelIds,
         });
 
         return isMonitored;

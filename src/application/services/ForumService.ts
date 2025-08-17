@@ -6,9 +6,9 @@ import { IAlertNotifier } from '../../infrastructure/logger/AlertNotifier';
 import { EmojiConfig, EmojiUtils } from '../../infrastructure/discord/EmojiUtils';
 import { ReactionEmoji, GuildEmoji, ApplicationEmoji } from 'discord.js';
 import { IMessageRepository } from '../../domain/repositories/IMessageRepository';
+import { ConfigManager } from '../../infrastructure/config/ConfigManager';
 
 export interface IForumServiceConfig {
-    forumChannelId: string;
     questionPrefix: string;
     triggerEmoji: EmojiConfig;
     maxTitleLength: number;
@@ -62,17 +62,35 @@ export class ForumService {
                 return;
             }
 
+            // 対応するフォーラムチャンネルIDを取得
+            const configManager = ConfigManager.getInstance();
+            const forumChannelId = configManager.getForumChannelId(message.channelId);
+
+            if (!forumChannelId) {
+                this.logger.error('No corresponding forum channel found for monitor channel', {
+                    messageId: message.id,
+                    monitorChannelId: message.channelId,
+                });
+                await this.alertNotifier.sendAlert(
+                    'error',
+                    'Forum Channel Configuration Error',
+                    `No corresponding forum channel found for monitor channel: ${message.channelId}`
+                );
+                return;
+            }
+
             this.logger.info('Creating forum for message', {
                 messageId: message.id,
                 authorId: message.authorId,
                 channelId: message.channelId,
+                forumChannelId,
                 isQuestionMessage,
                 hasReaction,
             });
 
             const result: CreateForumResult = await this.createForumUseCase.execute(
                 message,
-                this.config.forumChannelId,
+                forumChannelId,
                 this.config.maxTitleLength
             );
 
@@ -177,9 +195,27 @@ export class ForumService {
                 return;
             }
 
+            // 対応するフォーラムチャンネルIDを取得
+            const configManager = ConfigManager.getInstance();
+            const forumChannelId = configManager.getForumChannelId(channelId);
+
+            if (!forumChannelId) {
+                this.logger.error('No corresponding forum channel found for monitor channel', {
+                    messageId,
+                    monitorChannelId: channelId,
+                });
+                await this.alertNotifier.sendAlert(
+                    'error',
+                    'Forum Channel Configuration Error',
+                    `No corresponding forum channel found for monitor channel: ${channelId}`
+                );
+                return;
+            }
+
             this.logger.info('Creating forum for reaction', {
                 messageId,
                 channelId,
+                forumChannelId,
                 emojiName: emoji.name,
                 emojiId: emoji.id,
                 userId,
@@ -187,7 +223,7 @@ export class ForumService {
 
             const result: CreateForumResult = await this.createForumUseCase.execute(
                 message,
-                this.config.forumChannelId,
+                forumChannelId,
                 this.config.maxTitleLength,
                 userId // リアクションしたユーザーIDを渡す
             );

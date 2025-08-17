@@ -2,11 +2,15 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { EmojiConfig, EmojiUtils } from '../discord/EmojiUtils';
 
+export interface IChannelMapping {
+    monitorChannelId: string;
+    forumChannelId: string;
+}
+
 export interface IDiscordConfig {
     token: string;
     guildId: string;
-    monitorChannelIds: string[];
-    forumChannelId: string;
+    channelMappings: IChannelMapping[];
     alertChannelId: string;
     triggerEmoji: EmojiConfig;
     questionPrefix: string;
@@ -87,8 +91,7 @@ export class ConfigManager {
         const requiredPaths = [
             'discord.token',
             'discord.guildId',
-            'discord.monitorChannelIds',
-            'discord.forumChannelId',
+            'discord.channelMappings',
             'discord.alertChannelId'
         ];
 
@@ -99,9 +102,27 @@ export class ConfigManager {
             }
         }
 
-        // 配列の検証
-        if (!Array.isArray(config.discord.monitorChannelIds) || config.discord.monitorChannelIds.length === 0) {
-            throw new Error('discord.monitorChannelIds must be a non-empty array');
+        // チャンネルマッピングの検証
+        if (!Array.isArray(config.discord.channelMappings) || config.discord.channelMappings.length === 0) {
+            throw new Error('discord.channelMappings must be a non-empty array');
+        }
+
+        // 各チャンネルマッピングの検証
+        for (let i = 0; i < config.discord.channelMappings.length; i++) {
+            const mapping = config.discord.channelMappings[i];
+            if (!mapping.monitorChannelId || !mapping.forumChannelId) {
+                throw new Error(`Invalid channel mapping at index ${i}: both monitorChannelId and forumChannelId are required`);
+            }
+            if (typeof mapping.monitorChannelId !== 'string' || typeof mapping.forumChannelId !== 'string') {
+                throw new Error(`Invalid channel mapping at index ${i}: channel IDs must be strings`);
+            }
+        }
+
+        // 重複チェック
+        const monitorChannelIds = config.discord.channelMappings.map((m: any) => m.monitorChannelId);
+        const uniqueMonitorChannelIds = new Set(monitorChannelIds);
+        if (monitorChannelIds.length !== uniqueMonitorChannelIds.size) {
+            throw new Error('Duplicate monitor channel IDs found in channel mappings');
         }
 
         // 数値の検証
@@ -159,5 +180,33 @@ export class ConfigManager {
 
     public getConnectionConfig(): IConnectionConfig {
         return this.appConfig.connection;
+    }
+
+    /**
+     * 監視チャンネルIDから対応するフォーラムチャンネルIDを取得
+     * @param monitorChannelId 監視チャンネルID
+     * @returns フォーラムチャンネルID（見つからない場合はundefined）
+     */
+    public getForumChannelId(monitorChannelId: string): string | undefined {
+        const mapping = this.appConfig.discord.channelMappings.find(
+            mapping => mapping.monitorChannelId === monitorChannelId
+        );
+        return mapping?.forumChannelId;
+    }
+
+    /**
+     * 監視チャンネルIDのリストを取得
+     * @returns 監視チャンネルIDの配列
+     */
+    public getMonitorChannelIds(): string[] {
+        return this.appConfig.discord.channelMappings.map(mapping => mapping.monitorChannelId);
+    }
+
+    /**
+     * チャンネルマッピングの設定を取得
+     * @returns チャンネルマッピング配列
+     */
+    public getChannelMappings(): IChannelMapping[] {
+        return this.appConfig.discord.channelMappings;
     }
 }
