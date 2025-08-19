@@ -8,6 +8,8 @@
     "dev": "NODE_ENV=development nodemon --exec ts-node src/main.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
     "docker:build": "docker build -t discord-forum-bot .",
+    "docker:rebuild": "docker compose down && docker compose build --no-cache && docker compose up -d",
+    "docker:deploy": "docker compose down && docker compose up -d --build",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f"
