@@ -10,7 +10,7 @@ export class ConnectionService {
         private readonly connectionMonitorUseCase: ConnectionMonitorUseCase,
         private readonly logger: ILogger,
         private readonly alertNotifier: AlertNotifier
-    ) {}
+    ) { }
 
     /**
      * 接続監視サービスを開始
@@ -40,7 +40,7 @@ export class ConnectionService {
 
         this.isStarted = false;
         this.connectionMonitorUseCase.stopMonitoring();
-        
+
         this.logger.info('Connection service stopped');
     }
 
@@ -67,16 +67,17 @@ export class ConnectionService {
             switch (event.type) {
                 case 'connected':
                     this.logger.info('Discord connection established');
-                    await this.alertNotifier.sendAlert(
-                        'info',
-                        'Connection Restored',
-                        'Discord connection has been successfully established'
-                    );
+                    // 通知頻度が多すぎるため、一旦コメントアウト
+                    // await this.alertNotifier.sendAlert(
+                    //     'info',
+                    //     'Connection Restored',
+                    //     'Discord connection has been successfully established'
+                    // );
                     break;
 
                 case 'disconnected':
-                    this.logger.warn('Discord connection lost', { 
-                        error: event.error?.message 
+                    this.logger.warn('Discord connection lost', {
+                        error: event.error?.message
                     });
                     await this.alertNotifier.sendAlert(
                         'warn',
@@ -99,7 +100,7 @@ export class ConnectionService {
                     break;
 
                 case 'error':
-                    this.logger.error('Discord connection error', { 
+                    this.logger.error('Discord connection error', {
                         error: event.error?.message,
                         stack: event.error?.stack
                     });
@@ -112,9 +113,9 @@ export class ConnectionService {
                     break;
             }
         } catch (error) {
-            this.logger.error('Error handling connection event', { 
+            this.logger.error('Error handling connection event', {
                 eventType: event.type,
-                error: error instanceof Error ? error.message : String(error) 
+                error: error instanceof Error ? error.message : String(error)
             });
         }
     }
