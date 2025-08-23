@@ -1,5 +1,6 @@
 import { ForumPost } from '../entities/ForumPost';
 import { ForumCreationStatus } from '../entities/ForumCreationStatus';
+import { IDiscordAttachment } from '../entities/DiscordMessage';
 
 export interface IForumRepository {
     /**
@@ -9,6 +10,13 @@ export interface IForumRepository {
      * @returns 作成されたフォーラム投稿のID
      */
     createForumPost(forumChannelId: string, forumPost: ForumPost): Promise<string>;
+
+    /**
+     * フォーラムスレッドに添付ファイルを投稿する
+     * @param threadId フォーラムスレッドのID
+     * @param attachments 投稿する添付ファイル
+     */
+    postAttachments(threadId: string, attachments: IDiscordAttachment[]): Promise<void>;
 
     /**
      * フォーラムチャンネルが存在し、アクセス可能かどうかを確認する

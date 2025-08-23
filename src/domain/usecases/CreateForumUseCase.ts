@@ -49,6 +49,16 @@ export class CreateForumUseCase {
         // フォーラムに投稿
         const forumPostId = await this.forumRepository.createForumPost(forumChannelId, forumPost);
 
+        // 添付ファイルがある場合は、フォーラムスレッドに投稿
+        if (forumPost.hasAttachments()) {
+            try {
+                await this.forumRepository.postAttachments(forumPostId, forumPost.attachments);
+            } catch (error) {
+                // 添付ファイル投稿に失敗してもフォーラム作成自体は成功とする
+                console.error('Failed to post attachments:', error);
+            }
+        }
+
         // フォーラムのURLを生成
         const forumUrl = this.forumRepository.getForumPostUrl(message.guildId, forumChannelId, forumPostId);
 

@@ -1,4 +1,4 @@
-import { DiscordMessage } from './DiscordMessage';
+import { DiscordMessage, IDiscordAttachment } from './DiscordMessage';
 
 export interface IForumPost {
     title: string;
@@ -9,6 +9,7 @@ export interface IForumPost {
     originalMessageId: string;
     originalChannelId: string;
     createdAt: Date;
+    attachments: IDiscordAttachment[];
 }
 
 export class ForumPost implements IForumPost {
@@ -20,7 +21,8 @@ export class ForumPost implements IForumPost {
         public readonly authorNickname: string,
         public readonly originalMessageId: string,
         public readonly originalChannelId: string,
-        public readonly createdAt: Date
+        public readonly createdAt: Date,
+        public readonly attachments: IDiscordAttachment[]
     ) { }
 
     public static createFromMessage(message: DiscordMessage, maxTitleLength: number): ForumPost {
@@ -35,7 +37,8 @@ export class ForumPost implements IForumPost {
             message.authorNickname,
             message.id,
             message.channelId,
-            new Date()
+            new Date(),
+            message.getAllAttachments()
         );
     }
 
@@ -72,6 +75,19 @@ export class ForumPost implements IForumPost {
             `**投稿時刻:** ${message.timestamp.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}`
         ];
 
+        // 画像添付ファイルがある場合は、その旨を追加
+        if (message.hasAttachments()) {
+            const attachmentCount = message.getAllAttachments().length;
+            lines.push(`**添付ファイル:** ${attachmentCount}個`);
+        }
+
         return lines.join('\n');
+    }
+
+    /**
+     * 添付ファイルがあるかチェック
+     */
+    public hasAttachments(): boolean {
+        return this.attachments.length > 0;
     }
 }
