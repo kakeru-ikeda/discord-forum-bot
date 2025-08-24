@@ -1,6 +1,6 @@
 import { ForumTagUseCase } from '../../domain/usecases/ForumTagUseCase';
 import { IForumRepository } from '../../domain/repositories/IForumRepository';
-import { ILogger } from '../../infrastructure/logger/Logger';
+import { Logger } from '../../infrastructure/logger/Logger';
 import { IAlertNotifier } from '../../infrastructure/logger/AlertNotifier';
 import { ConfigManager } from '../../infrastructure/config/ConfigManager';
 import { ReactionEmoji, GuildEmoji, ApplicationEmoji, Client, ChannelType } from 'discord.js';
@@ -10,7 +10,6 @@ export class ForumTagHandler {
         private readonly forumTagUseCase: ForumTagUseCase,
         private readonly forumRepository: IForumRepository,
         private readonly client: Client,
-        private readonly logger: ILogger,
         private readonly alertNotifier: IAlertNotifier
     ) { }
 
@@ -49,7 +48,7 @@ export class ForumTagHandler {
         action: 'add' | 'remove'
     ): Promise<void> {
         try {
-            this.logger.debug(`Processing forum post reaction ${action}`, {
+            Logger.debug(`Processing forum post reaction ${action}`, {
                 messageId,
                 channelId,
                 emojiName: emoji.name,
@@ -62,7 +61,7 @@ export class ForumTagHandler {
             // channelIdはフォーラムのスレッドID（フォーラム投稿ID）なので、親チャンネルを取得
             const thread = await this.client.channels.fetch(channelId);
             if (!thread || !thread.isThread()) {
-                this.logger.debug('Channel is not a thread, ignoring reaction', {
+                Logger.debug('Channel is not a thread, ignoring reaction', {
                     messageId,
                     channelId,
                 });
@@ -71,7 +70,7 @@ export class ForumTagHandler {
 
             const forumChannelId = thread.parentId;
             if (!forumChannelId) {
-                this.logger.debug('Thread has no parent channel, ignoring reaction', {
+                Logger.debug('Thread has no parent channel, ignoring reaction', {
                     messageId,
                     channelId,
                 });
@@ -81,7 +80,7 @@ export class ForumTagHandler {
             // 親チャンネルがフォーラムチャンネルかどうか確認
             const parentChannel = await this.client.channels.fetch(forumChannelId);
             if (!parentChannel || parentChannel.type !== ChannelType.GuildForum) {
-                this.logger.debug('Parent channel is not a forum channel, ignoring reaction', {
+                Logger.debug('Parent channel is not a forum channel, ignoring reaction', {
                     messageId,
                     channelId,
                     parentChannelId: forumChannelId,
@@ -97,7 +96,7 @@ export class ForumTagHandler {
             const matchingTag = this.forumTagUseCase.findTagByEmoji(availableTags, emojiIdentifier);
 
             if (!matchingTag) {
-                this.logger.debug('No matching tag found for emoji reaction', {
+                Logger.debug('No matching tag found for emoji reaction', {
                     messageId,
                     channelId,
                     emojiIdentifier,
@@ -106,7 +105,7 @@ export class ForumTagHandler {
                 return;
             }
 
-            this.logger.info(`${action === 'add' ? 'Applying' : 'Removing'} tag ${action === 'add' ? 'to' : 'from'} forum post based on reaction`, {
+            Logger.info(`${action === 'add' ? 'Applying' : 'Removing'} tag ${action === 'add' ? 'to' : 'from'} forum post based on reaction`, {
                 messageId,
                 channelId,
                 forumChannelId,
@@ -125,7 +124,7 @@ export class ForumTagHandler {
                 if (!currentTags.includes(matchingTag.id)) {
                     newTagIds = [...currentTags, matchingTag.id];
                 } else {
-                    this.logger.debug('Tag already exists on forum post', {
+                    Logger.debug('Tag already exists on forum post', {
                         messageId,
                         channelId,
                         tagId: matchingTag.id,
@@ -139,7 +138,7 @@ export class ForumTagHandler {
 
                 if (reactionCount > 0) {
                     // まだ他の人がリアクションしている場合はタグを残す
-                    this.logger.debug('Other users still have reactions, keeping tag', {
+                    Logger.debug('Other users still have reactions, keeping tag', {
                         messageId,
                         channelId,
                         tagId: matchingTag.id,
@@ -152,7 +151,7 @@ export class ForumTagHandler {
                 // 誰もリアクションしていない場合のみタグを削除
                 newTagIds = currentTags.filter((tagId: string) => tagId !== matchingTag.id);
                 if (currentTags.length === newTagIds.length) {
-                    this.logger.debug('Tag was not present on forum post', {
+                    Logger.debug('Tag was not present on forum post', {
                         messageId,
                         channelId,
                         tagId: matchingTag.id,
@@ -169,7 +168,7 @@ export class ForumTagHandler {
                 newTagIds
             );
 
-            this.logger.info(`Tag ${action === 'add' ? 'applied to' : 'removed from'} forum post successfully`, {
+            Logger.info(`Tag ${action === 'add' ? 'applied to' : 'removed from'} forum post successfully`, {
                 messageId,
                 channelId: channelId,
                 tagId: matchingTag.id,
@@ -181,7 +180,7 @@ export class ForumTagHandler {
             });
 
         } catch (error) {
-            this.logger.error('Failed to handle forum post reaction for tagging', {
+            Logger.error('Failed to handle forum post reaction for tagging', {
                 messageId,
                 channelId,
                 emojiName: emoji.name,
@@ -233,7 +232,7 @@ export class ForumTagHandler {
             const users = await targetReaction.users.fetch();
             const nonBotUsers = users.filter(user => !user.bot);
 
-            this.logger.debug('Reaction count check', {
+            Logger.debug('Reaction count check', {
                 messageId,
                 channelId,
                 emojiIdentifier,
@@ -243,7 +242,7 @@ export class ForumTagHandler {
 
             return nonBotUsers.size;
         } catch (error) {
-            this.logger.error('Failed to check reaction count', {
+            Logger.error('Failed to check reaction count', {
                 messageId,
                 channelId,
                 emojiIdentifier,

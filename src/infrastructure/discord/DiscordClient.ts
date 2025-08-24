@@ -1,11 +1,11 @@
 import { Client, GatewayIntentBits, Partials } from 'discord.js';
-import { ILogger } from '../logger/Logger';
+import { Logger } from '../logger/Logger';
 
 export class DiscordClient {
     private client: Client;
     private isReady: boolean = false;
 
-    constructor(private readonly logger: ILogger) {
+    constructor() {
         this.client = new Client({
             intents: [
                 GatewayIntentBits.Guilds,
@@ -26,24 +26,24 @@ export class DiscordClient {
     private setupEventHandlers(): void {
         this.client.once('ready', () => {
             this.isReady = true;
-            this.logger.info(`Bot is ready! Logged in as ${this.client.user?.tag}`);
+            Logger.info(`Bot is ready! Logged in as ${this.client.user?.tag}`);
         });
 
         this.client.on('error', (error) => {
-            this.logger.error('Discord client error', { error: error.message, stack: error.stack });
+            Logger.error('Discord client error', { error: error.message, stack: error.stack });
         });
 
         this.client.on('warn', (warning) => {
-            this.logger.warn('Discord client warning', { warning });
+            Logger.warn('Discord client warning', { warning });
         });
     }
 
     public async login(token: string): Promise<void> {
         try {
             await this.client.login(token);
-            this.logger.info('Successfully logged in to Discord');
+            Logger.info('Successfully logged in to Discord');
         } catch (error) {
-            this.logger.error('Failed to login to Discord', { error: error instanceof Error ? error.message : String(error) });
+            Logger.error('Failed to login to Discord', { error: error instanceof Error ? error.message : String(error) });
             throw error;
         }
     }
@@ -57,10 +57,10 @@ export class DiscordClient {
             if (this.client) {
                 await this.client.destroy();
                 this.isReady = false;
-                this.logger.info('Discord client shutdown completed');
+                Logger.info('Discord client shutdown completed');
             }
         } catch (error) {
-            this.logger.error('Error during Discord client shutdown', { error: error instanceof Error ? error.message : String(error) });
+            Logger.error('Error during Discord client shutdown', { error: error instanceof Error ? error.message : String(error) });
             throw error;
         }
     }
@@ -78,7 +78,7 @@ export class DiscordClient {
             try {
                 await handler(message);
             } catch (error) {
-                this.logger.error('Error in message handler', { error: error instanceof Error ? error.message : String(error) });
+                Logger.error('Error in message handler', { error: error instanceof Error ? error.message : String(error) });
             }
         });
     }
@@ -88,7 +88,7 @@ export class DiscordClient {
             try {
                 await handler(reaction, user);
             } catch (error) {
-                this.logger.error('Error in reaction add handler', { error: error instanceof Error ? error.message : String(error) });
+                Logger.error('Error in reaction add handler', { error: error instanceof Error ? error.message : String(error) });
             }
         });
     }
@@ -98,7 +98,7 @@ export class DiscordClient {
             try {
                 await handler(reaction, user);
             } catch (error) {
-                this.logger.error('Error in reaction remove handler', { error: error instanceof Error ? error.message : String(error) });
+                Logger.error('Error in reaction remove handler', { error: error instanceof Error ? error.message : String(error) });
             }
         });
     }

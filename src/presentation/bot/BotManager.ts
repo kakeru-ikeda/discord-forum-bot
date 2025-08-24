@@ -19,7 +19,6 @@ import { ForumCreationStatusStorage } from '../../infrastructure/storage/ForumCr
 
 export class BotManager {
     private discordClient: DiscordClient;
-    private logger: Logger;
     private alertNotifier: AlertNotifier;
     private messageHandler: MessageHandler;
     private reactionHandler: ReactionHandler;
@@ -31,17 +30,16 @@ export class BotManager {
         const config = ConfigManager.getInstance();
         const appConfig = config.getConfig();
 
-        // Logger の初期化
-        this.logger = new Logger(appConfig.logging);
+        // Logger の初期化（Static用）
+        Logger.initialize(appConfig.logging);
 
         // Discord Client の初期化
-        this.discordClient = new DiscordClient(this.logger);
+        this.discordClient = new DiscordClient();
 
         // Alert Notifier の初期化
         this.alertNotifier = new AlertNotifier(
             this.discordClient.getClient(),
             appConfig.discord.alertChannelId,
-            this.logger,
             appConfig.logging.enableDiscordAlerts
         );
 
@@ -51,13 +49,11 @@ export class BotManager {
         // Repository の初期化
         const forumRepository = new ForumRepository(
             this.discordClient.getClient(),
-            this.logger,
             forumCreationStatusStorage
         );
 
         const messageRepository = new MessageRepository(
-            this.discordClient.getClient(),
-            this.logger
+            this.discordClient.getClient()
         );
 
         // UseCase の初期化
@@ -75,20 +71,18 @@ export class BotManager {
                 triggerEmoji: appConfig.discord.triggerEmoji,
                 maxTitleLength: appConfig.bot.maxTitleLength,
             },
-            this.logger,
             this.alertNotifier
         );
 
         // Handler の初期化
-        this.messageHandler = new MessageHandler(forumService, this.logger);
+        this.messageHandler = new MessageHandler(forumService);
         this.forumTagHandler = new ForumTagHandler(
             forumTagUseCase,
             forumRepository,
             this.discordClient.getClient(),
-            this.logger,
             this.alertNotifier
         );
-        this.reactionHandler = new ReactionHandler(forumService, this.forumTagHandler, this.logger);
+        this.reactionHandler = new ReactionHandler(forumService, this.forumTagHandler);
 
         // 接続管理機能の初期化
         this.setupConnectionManagement();
@@ -119,7 +113,6 @@ export class BotManager {
         const connectionManager = new DiscordConnectionManager(
             this.discordClient.getClient(),
             reconnectionStrategy,
-            this.logger,
             discordConfig.token,
             connectionConfig.healthCheckInterval
         );
@@ -130,7 +123,6 @@ export class BotManager {
         // 接続サービスの初期化
         this.connectionService = new ConnectionService(
             connectionMonitorUseCase,
-            this.logger,
             this.alertNotifier
         );
     }
@@ -138,7 +130,7 @@ export class BotManager {
     private setupErrorHandling(): void {
         // 未処理の例外をキャッチ
         process.on('uncaughtException', async (error) => {
-            this.logger.error('Uncaught Exception', { error: error.message, stack: error.stack });
+            Logger.error('Uncaught Exception', { error: error.message, stack: error.stack });
             await this.alertNotifier.sendAlert(
                 'error',
                 'Uncaught Exception',
@@ -148,14 +140,14 @@ export class BotManager {
 
             // アプリケーションの継続を試みる
             if (!this.isShuttingDown) {
-                this.logger.info('Attempting to continue after uncaught exception');
+                Logger.info('Attempting to continue after uncaught exception');
             }
         });
 
         // 未処理のPromise拒否をキャッチ
         process.on('unhandledRejection', async (reason, promise) => {
             const error = reason instanceof Error ? reason : new Error(String(reason));
-            this.logger.error('Unhandled Rejection', { error: error.message, stack: error.stack });
+            Logger.error('Unhandled Rejection', { error: error.message, stack: error.stack });
             await this.alertNotifier.sendAlert(
                 'error',
                 'Unhandled Promise Rejection',
@@ -165,7 +157,7 @@ export class BotManager {
 
             // アプリケーションの継続を試みる
             if (!this.isShuttingDown) {
-                this.logger.info('Attempting to continue after unhandled rejection');
+                Logger.info('Attempting to continue after unhandled rejection');
             }
         });
 
@@ -179,7 +171,7 @@ export class BotManager {
             const environment = process.env.NODE_ENV || 'development';
             const isProduction = environment === 'production';
 
-            this.logger.info(`Starting Discord Forum Bot... (Environment: ${environment})`);
+            Logger.info(`Starting Discord Forum Bot... (Environment: ${environment})`);
 
             const config = ConfigManager.getInstance();
             const discordConfig = config.getDiscordConfig();
@@ -187,7 +179,7 @@ export class BotManager {
 
             // 設定情報をログに出力（機密情報は除く）
             const channelMappings = config.getChannelMappings();
-            this.logger.info('Bot Configuration:', {
+            Logger.info('Bot Configuration:', {
                 environment: `${environment}`,
                 guildId: discordConfig.guildId,
                 channelMappings: channelMappings.length,
@@ -229,10 +221,10 @@ export class BotManager {
                 `Discord Forum Bot has started successfully (Environment: ${environment})`
             );
 
-            this.logger.info(`Discord Forum Bot started successfully (Environment: ${environment})`);
+            Logger.info(`Discord Forum Bot started successfully (Environment: ${environment})`);
 
         } catch (error) {
-            this.logger.error('Failed to start bot', { error: error instanceof Error ? error.message : String(error) });
+            Logger.error('Failed to start bot', { error: error instanceof Error ? error.message : String(error) });
             await this.alertNotifier.sendAlert(
                 'error',
                 'Bot Startup Failed',
@@ -249,7 +241,7 @@ export class BotManager {
         }
 
         this.isShuttingDown = true;
-        this.logger.info(`Received ${signal}. Starting graceful shutdown...`);
+        Logger.info(`Received ${signal}. Starting graceful shutdown...`);
 
         try {
             await this.alertNotifier.sendAlert(
@@ -262,10 +254,10 @@ export class BotManager {
             this.connectionService.stop();
 
             await this.discordClient.shutdown();
-            this.logger.info('Graceful shutdown completed');
+            Logger.info('Graceful shutdown completed');
             process.exit(0);
         } catch (error) {
-            this.logger.error('Error during graceful shutdown', { error: error instanceof Error ? error.message : String(error) });
+            Logger.error('Error during graceful shutdown', { error: error instanceof Error ? error.message : String(error) });
             process.exit(1);
         }
     }
@@ -275,11 +267,11 @@ export class BotManager {
      */
     public async forceReconnect(): Promise<boolean> {
         if (this.isShuttingDown) {
-            this.logger.warn('Cannot reconnect during shutdown');
+            Logger.warn('Cannot reconnect during shutdown');
             return false;
         }
 
-        this.logger.info('Manual reconnection requested via BotManager');
+        Logger.info('Manual reconnection requested via BotManager');
         return await this.connectionService.forceReconnect();
     }
 

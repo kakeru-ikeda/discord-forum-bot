@@ -1,13 +1,12 @@
 import { MessageReaction, User, PartialMessageReaction, PartialUser } from 'discord.js';
 import { ForumService } from '../services/ForumService';
 import { ForumTagHandler } from './ForumTagHandler';
-import { ILogger } from '../../infrastructure/logger/Logger';
+import { Logger } from '../../infrastructure/logger/Logger';
 
 export class ReactionHandler {
     constructor(
         private readonly forumService: ForumService,
-        private readonly forumTagHandler: ForumTagHandler,
-        private readonly logger: ILogger
+        private readonly forumTagHandler: ForumTagHandler
     ) { }
 
     async handleReactionAdd(
@@ -56,14 +55,14 @@ export class ReactionHandler {
 
             const emojiName = reaction.emoji.name;
             if (!emojiName) {
-                this.logger.debug('Reaction has no emoji name', {
+                Logger.debug('Reaction has no emoji name', {
                     messageId: reaction.message.id,
                     userId: user.id,
                 });
                 return;
             }
 
-            this.logger.debug(`Received reaction ${action}`, {
+            Logger.debug(`Received reaction ${action}`, {
                 messageId: reaction.message.id,
                 channelId: reaction.message.channelId,
                 guildId: reaction.message.guildId,
@@ -105,7 +104,7 @@ export class ReactionHandler {
             }
 
         } catch (error) {
-            this.logger.error(`Unhandled error in reaction ${action} handler`, {
+            Logger.error(`Unhandled error in reaction ${action} handler`, {
                 messageId: reaction.message?.id,
                 userId: user?.id,
                 action,

@@ -1,7 +1,7 @@
 import { CreateForumUseCase, CreateForumResult } from '../../domain/usecases/CreateForumUseCase';
 import { MonitorMessageUseCase } from '../../domain/usecases/MonitorMessageUseCase';
 import { DiscordMessage } from '../../domain/entities/DiscordMessage';
-import { ILogger } from '../../infrastructure/logger/Logger';
+import { Logger } from '../../infrastructure/logger/Logger';
 import { IAlertNotifier } from '../../infrastructure/logger/AlertNotifier';
 import { EmojiConfig, EmojiUtils } from '../../infrastructure/discord/EmojiUtils';
 import { ReactionEmoji, GuildEmoji, ApplicationEmoji } from 'discord.js';
@@ -20,13 +20,12 @@ export class ForumService {
         private readonly monitorMessageUseCase: MonitorMessageUseCase,
         private readonly messageRepository: IMessageRepository,
         private readonly config: IForumServiceConfig,
-        private readonly logger: ILogger,
         private readonly alertNotifier: IAlertNotifier
     ) { }
 
     async handleMessage(message: DiscordMessage): Promise<void> {
         try {
-            this.logger.debug('Processing message for forum creation', {
+            Logger.debug('Processing message for forum creation', {
                 messageId: message.id,
                 authorId: message.authorId,
                 channelId: message.channelId,
@@ -36,7 +35,7 @@ export class ForumService {
             // 監視対象のチャンネルかチェック
             const isMonitored = await this.messageRepository.isMonitoredChannel(message.channelId);
             if (!isMonitored) {
-                this.logger.debug('Message is not from monitored channel', {
+                Logger.debug('Message is not from monitored channel', {
                     messageId: message.id,
                     channelId: message.channelId,
                 });
@@ -56,7 +55,7 @@ export class ForumService {
             const shouldCreate = isQuestionMessage || hasReaction;
 
             if (!shouldCreate) {
-                this.logger.debug('Message does not meet forum creation criteria', {
+                Logger.debug('Message does not meet forum creation criteria', {
                     messageId: message.id,
                 });
                 return;
@@ -67,7 +66,7 @@ export class ForumService {
             const forumChannelId = configManager.getForumChannelId(message.channelId);
 
             if (!forumChannelId) {
-                this.logger.error('No corresponding forum channel found for monitor channel', {
+                Logger.error('No corresponding forum channel found for monitor channel', {
                     messageId: message.id,
                     monitorChannelId: message.channelId,
                 });
@@ -79,7 +78,7 @@ export class ForumService {
                 return;
             }
 
-            this.logger.info('Creating forum for message', {
+            Logger.info('Creating forum for message', {
                 messageId: message.id,
                 authorId: message.authorId,
                 channelId: message.channelId,
@@ -96,7 +95,7 @@ export class ForumService {
 
             // 新しくフォーラムが作成された場合のみ処理を続行
             if (!result.isNewForum) {
-                this.logger.debug('Forum already exists for this message', {
+                Logger.debug('Forum already exists for this message', {
                     messageId: message.id,
                     existingForumPostId: result.forumPostId,
                 });
@@ -112,19 +111,19 @@ export class ForumService {
                 );
 
                 if (reactionAdded) {
-                    this.logger.info('Trigger emoji added to question message', {
+                    Logger.info('Trigger emoji added to question message', {
                         messageId: message.id,
                         emoji: EmojiUtils.getIdentifier(this.config.triggerEmoji),
                     });
                 } else {
-                    this.logger.warn('Failed to add trigger emoji to question message', {
+                    Logger.warn('Failed to add trigger emoji to question message', {
                         messageId: message.id,
                         emoji: EmojiUtils.getIdentifier(this.config.triggerEmoji),
                     });
                 }
             }
 
-            this.logger.info('Forum created successfully', {
+            Logger.info('Forum created successfully', {
                 messageId: message.id,
                 forumPostId: result.forumPostId,
                 forumUrl: result.forumUrl,
@@ -138,7 +137,7 @@ export class ForumService {
             );
 
         } catch (error) {
-            this.logger.error('Failed to handle message for forum creation', {
+            Logger.error('Failed to handle message for forum creation', {
                 messageId: message.id,
                 error: error instanceof Error ? error.message : String(error),
             });
@@ -162,7 +161,7 @@ export class ForumService {
                 return;
             }
 
-            this.logger.debug('Processing reaction for forum creation', {
+            Logger.debug('Processing reaction for forum creation', {
                 messageId,
                 channelId,
                 emoji: EmojiUtils.getIdentifier(this.config.triggerEmoji),
@@ -172,7 +171,7 @@ export class ForumService {
             // メッセージを取得
             const message = await this.monitorMessageUseCase.getMessage(messageId, channelId);
             if (!message) {
-                this.logger.warn('Message not found for reaction handling', {
+                Logger.warn('Message not found for reaction handling', {
                     messageId,
                     channelId,
                 });
@@ -187,7 +186,7 @@ export class ForumService {
             );
 
             if (!shouldCreate) {
-                this.logger.debug('Reaction does not meet forum creation criteria', {
+                Logger.debug('Reaction does not meet forum creation criteria', {
                     messageId,
                     emojiName: emoji.name,
                     emojiId: emoji.id,
@@ -200,7 +199,7 @@ export class ForumService {
             const forumChannelId = configManager.getForumChannelId(channelId);
 
             if (!forumChannelId) {
-                this.logger.error('No corresponding forum channel found for monitor channel', {
+                Logger.error('No corresponding forum channel found for monitor channel', {
                     messageId,
                     monitorChannelId: channelId,
                 });
@@ -212,7 +211,7 @@ export class ForumService {
                 return;
             }
 
-            this.logger.info('Creating forum for reaction', {
+            Logger.info('Creating forum for reaction', {
                 messageId,
                 channelId,
                 forumChannelId,
@@ -230,7 +229,7 @@ export class ForumService {
 
             // 新しくフォーラムが作成された場合のみログ出力とアラート送信
             if (result.isNewForum) {
-                this.logger.info('Forum created successfully from reaction', {
+                Logger.info('Forum created successfully from reaction', {
                     messageId,
                     forumPostId: result.forumPostId,
                     forumUrl: result.forumUrl,
@@ -244,7 +243,7 @@ export class ForumService {
                     `New forum post created from reaction by user ${userId} on message by ${message.authorNickname}\nForum URL: ${result.forumUrl}`,
                 );
             } else {
-                this.logger.debug('Forum already exists for this message, skipping duplicate creation', {
+                Logger.debug('Forum already exists for this message, skipping duplicate creation', {
                     messageId,
                     existingForumPostId: result.forumPostId,
                     reactionUserId: userId,
@@ -252,7 +251,7 @@ export class ForumService {
             }
 
         } catch (error) {
-            this.logger.error('Failed to handle reaction for forum creation', {
+            Logger.error('Failed to handle reaction for forum creation', {
                 messageId,
                 channelId,
                 emojiName: emoji.name,

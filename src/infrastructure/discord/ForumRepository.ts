@@ -4,13 +4,12 @@ import { ForumPost } from '../../domain/entities/ForumPost';
 import { ForumCreationStatus } from '../../domain/entities/ForumCreationStatus';
 import { IDiscordAttachment } from '../../domain/entities/DiscordMessage';
 import { ForumTag } from '../../domain/entities/ForumTag';
-import { ILogger } from '../logger/Logger';
+import { Logger } from '../logger/Logger';
 import { ForumCreationStatusStorage } from '../storage/ForumCreationStatusStorage';
 
 export class ForumRepository implements IForumRepository {
     constructor(
         private readonly client: Client,
-        private readonly logger: ILogger,
         private readonly statusStorage: ForumCreationStatusStorage
     ) { }
 
@@ -32,7 +31,7 @@ export class ForumRepository implements IForumRepository {
                 },
             });
 
-            this.logger.info('Forum post created successfully', {
+            Logger.info('Forum post created successfully', {
                 forumPostId: thread.id,
                 title: forumPost.title,
                 authorId: forumPost.authorId,
@@ -41,7 +40,7 @@ export class ForumRepository implements IForumRepository {
 
             return thread.id;
         } catch (error) {
-            this.logger.error('Failed to create forum post', {
+            Logger.error('Failed to create forum post', {
                 forumChannelId,
                 title: forumPost.title,
                 error: error instanceof Error ? error.message : String(error),
@@ -84,13 +83,13 @@ export class ForumRepository implements IForumRepository {
 
                 await thread.send({ content });
 
-                this.logger.info('Attachments posted to forum thread', {
+                Logger.info('Attachments posted to forum thread', {
                     threadId,
                     attachmentCount: attachments.length,
                 });
             }
         } catch (error) {
-            this.logger.error('Failed to post attachments to forum thread', {
+            Logger.error('Failed to post attachments to forum thread', {
                 threadId,
                 attachmentCount: attachments.length,
                 error: error instanceof Error ? error.message : String(error),
@@ -158,12 +157,12 @@ export class ForumRepository implements IForumRepository {
             const channel = await this.client.channels.fetch(forumChannelId);
 
             if (!channel) {
-                this.logger.warn('Forum channel not found', { forumChannelId });
+                Logger.warn('Forum channel not found', { forumChannelId });
                 return false;
             }
 
             if (channel.type !== ChannelType.GuildForum) {
-                this.logger.warn('Channel is not a forum channel', {
+                Logger.warn('Channel is not a forum channel', {
                     forumChannelId,
                     actualType: channel.type
                 });
@@ -175,7 +174,7 @@ export class ForumRepository implements IForumRepository {
             const botMember = forumChannel.guild.members.cache.get(this.client.user?.id || '');
 
             if (!botMember) {
-                this.logger.warn('Bot member not found in guild', { forumChannelId });
+                Logger.warn('Bot member not found in guild', { forumChannelId });
                 return false;
             }
 
@@ -183,7 +182,7 @@ export class ForumRepository implements IForumRepository {
             const canCreateThreads = permissions?.has('CreatePublicThreads') || permissions?.has('SendMessages');
 
             if (!canCreateThreads) {
-                this.logger.warn('Bot does not have permission to create threads in forum channel', {
+                Logger.warn('Bot does not have permission to create threads in forum channel', {
                     forumChannelId
                 });
                 return false;
@@ -191,7 +190,7 @@ export class ForumRepository implements IForumRepository {
 
             return true;
         } catch (error) {
-            this.logger.error('Error checking forum channel accessibility', {
+            Logger.error('Error checking forum channel accessibility', {
                 forumChannelId,
                 error: error instanceof Error ? error.message : String(error),
             });
@@ -207,7 +206,7 @@ export class ForumRepository implements IForumRepository {
         try {
             return await this.statusStorage.get(messageId, channelId);
         } catch (error) {
-            this.logger.error('Failed to get forum creation status', {
+            Logger.error('Failed to get forum creation status', {
                 messageId,
                 channelId,
                 error: error instanceof Error ? error.message : String(error),
@@ -219,14 +218,14 @@ export class ForumRepository implements IForumRepository {
     async saveForumCreationStatus(status: ForumCreationStatus): Promise<void> {
         try {
             await this.statusStorage.save(status);
-            this.logger.debug('Forum creation status saved', {
+            Logger.debug('Forum creation status saved', {
                 messageId: status.messageId,
                 channelId: status.channelId,
                 forumPostId: status.forumPostId,
                 createdBy: status.createdBy,
             });
         } catch (error) {
-            this.logger.error('Failed to save forum creation status', {
+            Logger.error('Failed to save forum creation status', {
                 messageId: status.messageId,
                 channelId: status.channelId,
                 error: error instanceof Error ? error.message : String(error),
@@ -248,7 +247,7 @@ export class ForumRepository implements IForumRepository {
 
             const forumTags = tags.map(tag => ForumTag.fromDiscordTag(tag));
 
-            this.logger.debug('Forum tags retrieved', {
+            Logger.debug('Forum tags retrieved', {
                 forumChannelId,
                 tagCount: forumTags.length,
                 tags: forumTags.map(tag => ({ id: tag.id, name: tag.name, hasEmoji: tag.hasEmoji() }))
@@ -256,7 +255,7 @@ export class ForumRepository implements IForumRepository {
 
             return forumTags;
         } catch (error) {
-            this.logger.error('Failed to get forum tags', {
+            Logger.error('Failed to get forum tags', {
                 forumChannelId,
                 error: error instanceof Error ? error.message : String(error),
             });
@@ -281,13 +280,13 @@ export class ForumRepository implements IForumRepository {
             // リアクションを追加
             await starterMessage.react(emojiIdentifier);
 
-            this.logger.debug('Reaction added to forum post', {
+            Logger.debug('Reaction added to forum post', {
                 forumPostId,
                 emojiIdentifier,
                 messageId: starterMessage.id,
             });
         } catch (error) {
-            this.logger.error('Failed to add reaction to forum post', {
+            Logger.error('Failed to add reaction to forum post', {
                 forumPostId,
                 emojiIdentifier,
                 error: error instanceof Error ? error.message : String(error),
@@ -312,13 +311,13 @@ export class ForumRepository implements IForumRepository {
             // タグを追加
             await thread.setAppliedTags(tagIds);
 
-            this.logger.info('Tags added to forum post', {
+            Logger.info('Tags added to forum post', {
                 forumChannelId,
                 forumPostId,
                 tagIds,
             });
         } catch (error) {
-            this.logger.error('Failed to add tags to forum post', {
+            Logger.error('Failed to add tags to forum post', {
                 forumChannelId,
                 forumPostId,
                 tagIds,
@@ -337,7 +336,7 @@ export class ForumRepository implements IForumRepository {
 
             const currentTags = thread.appliedTags || [];
 
-            this.logger.debug('Current forum post tags retrieved', {
+            Logger.debug('Current forum post tags retrieved', {
                 forumPostId,
                 tagCount: currentTags.length,
                 tagIds: currentTags,
@@ -345,7 +344,7 @@ export class ForumRepository implements IForumRepository {
 
             return currentTags;
         } catch (error) {
-            this.logger.error('Failed to get current forum post tags', {
+            Logger.error('Failed to get current forum post tags', {
                 forumPostId,
                 error: error instanceof Error ? error.message : String(error),
             });

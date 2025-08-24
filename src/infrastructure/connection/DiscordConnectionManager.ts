@@ -1,7 +1,7 @@
 import { Client } from 'discord.js';
 import { IConnectionManager, IReconnectionStrategy } from '../../domain/repositories/IConnectionRepository';
 import { ConnectionStatus, ConnectionEvent } from '../../domain/entities/ConnectionStatus';
-import { ILogger } from '../logger/Logger';
+import { Logger } from '../logger/Logger';
 
 export class DiscordConnectionManager implements IConnectionManager {
     private connectionStatus: ConnectionStatus;
@@ -14,7 +14,6 @@ export class DiscordConnectionManager implements IConnectionManager {
     constructor(
         private readonly client: Client,
         private readonly reconnectionStrategy: IReconnectionStrategy,
-        private readonly logger: ILogger,
         private readonly loginToken: string,
         private readonly healthCheckInterval: number = 30000 // 30秒間隔でヘルスチェック
     ) {
@@ -41,7 +40,7 @@ export class DiscordConnectionManager implements IConnectionManager {
 
         // WebSocket接続クローズイベント
         this.client.on('shardDisconnect', (event, shardId) => {
-            this.logger.warn(`Discord shard ${shardId} disconnected`, { 
+            Logger.warn(`Discord shard ${shardId} disconnected`, { 
                 code: event.code, 
                 reason: event.reason 
             });
@@ -50,7 +49,7 @@ export class DiscordConnectionManager implements IConnectionManager {
 
         // レート制限イベント
         this.client.on('rateLimit', (rateLimitInfo) => {
-            this.logger.warn('Discord rate limit hit', {
+            Logger.warn('Discord rate limit hit', {
                 timeout: rateLimitInfo.timeout,
                 limit: rateLimitInfo.limit,
                 method: rateLimitInfo.method,
@@ -61,7 +60,7 @@ export class DiscordConnectionManager implements IConnectionManager {
 
         // 再接続イベント
         this.client.on('shardReconnecting', (shardId) => {
-            this.logger.info(`Discord shard ${shardId} is reconnecting`);
+            Logger.info(`Discord shard ${shardId} is reconnecting`);
             this.emitConnectionEvent({
                 type: 'reconnecting',
                 timestamp: new Date(),
@@ -71,7 +70,7 @@ export class DiscordConnectionManager implements IConnectionManager {
 
         // 再開イベント
         this.client.on('shardResume', (shardId, replayedEvents) => {
-            this.logger.info(`Discord shard ${shardId} resumed`, { 
+            Logger.info(`Discord shard ${shardId} resumed`, { 
                 replayedEvents 
             });
             this.handleConnectionEstablished();
@@ -95,7 +94,7 @@ export class DiscordConnectionManager implements IConnectionManager {
             this.reconnectionTimeout = undefined;
         }
 
-        this.logger.info('Discord connection established successfully');
+        Logger.info('Discord connection established successfully');
         this.emitConnectionEvent({
             type: 'connected',
             timestamp: new Date()
@@ -104,7 +103,7 @@ export class DiscordConnectionManager implements IConnectionManager {
 
     private handleConnectionError(error: Error): void {
         this.connectionStatus.lastError = error;
-        this.logger.error('Discord connection error', { 
+        Logger.error('Discord connection error', { 
             error: error.message, 
             stack: error.stack 
         });
@@ -126,7 +125,7 @@ export class DiscordConnectionManager implements IConnectionManager {
             this.connectionStatus.lastError = error;
         }
 
-        this.logger.warn('Discord connection lost', { 
+        Logger.warn('Discord connection lost', { 
             error: error?.message 
         });
 
@@ -153,12 +152,12 @@ export class DiscordConnectionManager implements IConnectionManager {
         const delay = this.reconnectionStrategy.getRetryDelay(this.connectionStatus.reconnectAttempts);
         
         if (delay === null) {
-            this.logger.error('Max reconnection attempts reached, stopping automatic reconnection');
+            Logger.error('Max reconnection attempts reached, stopping automatic reconnection');
             this.isReconnecting = false;
             return;
         }
 
-        this.logger.info(`Attempting reconnection in ${delay}ms (attempt ${this.connectionStatus.reconnectAttempts})`);
+        Logger.info(`Attempting reconnection in ${delay}ms (attempt ${this.connectionStatus.reconnectAttempts})`);
 
         this.emitConnectionEvent({
             type: 'reconnecting',
@@ -175,7 +174,7 @@ export class DiscordConnectionManager implements IConnectionManager {
                     this.startReconnection();
                 }
             } catch (error) {
-                this.logger.error('Reconnection attempt failed', { 
+                Logger.error('Reconnection attempt failed', { 
                     error: error instanceof Error ? error.message : String(error) 
                 });
                 this.isReconnecting = false;
@@ -186,7 +185,7 @@ export class DiscordConnectionManager implements IConnectionManager {
 
     private async attemptReconnection(): Promise<boolean> {
         try {
-            this.logger.info('Attempting to reconnect to Discord...');
+            Logger.info('Attempting to reconnect to Discord...');
             
             // 既存の接続を破棄
             if (this.client.isReady()) {
@@ -212,14 +211,14 @@ export class DiscordConnectionManager implements IConnectionManager {
             this.performHealthCheck();
         }, this.healthCheckInterval);
 
-        this.logger.info(`Connection health check started (interval: ${this.healthCheckInterval}ms)`);
+        Logger.info(`Connection health check started (interval: ${this.healthCheckInterval}ms)`);
     }
 
     private stopHealthCheck(): void {
         if (this.monitoringInterval) {
             clearInterval(this.monitoringInterval);
             this.monitoringInterval = undefined;
-            this.logger.info('Connection health check stopped');
+            Logger.info('Connection health check stopped');
         }
     }
 
@@ -228,11 +227,11 @@ export class DiscordConnectionManager implements IConnectionManager {
         
         if (this.connectionStatus.isConnected && !isActuallyConnected) {
             // 接続状態の不整合を検出
-            this.logger.warn('Health check detected connection inconsistency');
+            Logger.warn('Health check detected connection inconsistency');
             this.handleConnectionLost(new Error('Health check failed - connection lost'));
         } else if (!this.connectionStatus.isConnected && isActuallyConnected) {
             // 接続が復旧している
-            this.logger.info('Health check detected connection recovery');
+            Logger.info('Health check detected connection recovery');
             this.handleConnectionEstablished();
         }
     }
@@ -242,7 +241,7 @@ export class DiscordConnectionManager implements IConnectionManager {
             try {
                 callback(event);
             } catch (error) {
-                this.logger.error('Error in connection event callback', { 
+                Logger.error('Error in connection event callback', { 
                     error: error instanceof Error ? error.message : String(error) 
                 });
             }
@@ -257,7 +256,7 @@ export class DiscordConnectionManager implements IConnectionManager {
         this.isMonitoring = true;
         this.startHealthCheck();
         
-        this.logger.info('Connection monitoring started');
+        Logger.info('Connection monitoring started');
     }
 
     public stopMonitoring(): void {
@@ -275,11 +274,11 @@ export class DiscordConnectionManager implements IConnectionManager {
             this.reconnectionTimeout = undefined;
         }
 
-        this.logger.info('Connection monitoring stopped');
+        Logger.info('Connection monitoring stopped');
     }
 
     public async reconnect(): Promise<boolean> {
-        this.logger.info('Manual reconnection requested');
+        Logger.info('Manual reconnection requested');
         
         // 自動再接続を一時停止
         const wasReconnecting = this.isReconnecting;

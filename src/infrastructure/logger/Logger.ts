@@ -16,10 +16,48 @@ export interface ILogger {
 }
 
 export class Logger implements ILogger {
+    private static instance: Logger;
     private readonly logger: winston.Logger;
 
     constructor(private readonly config: ILoggingConfig) {
         this.logger = this.createLogger();
+    }
+
+    /**
+     * Staticアクセス用のインスタンス取得
+     */
+    public static getInstance(): Logger {
+        if (!this.instance) {
+            const config = require('../config/ConfigManager').ConfigManager.getInstance().getConfig();
+            this.instance = new Logger(config.logging);
+        }
+        return this.instance;
+    }
+
+    /**
+     * インスタンスの明示的な初期化（依存性注入との併用時に使用）
+     */
+    public static initialize(config: ILoggingConfig): void {
+        this.instance = new Logger(config);
+    }
+
+    /**
+     * Static convenience methods
+     */
+    public static error(message: string, meta?: any): void {
+        this.getInstance().error(message, meta);
+    }
+
+    public static warn(message: string, meta?: any): void {
+        this.getInstance().warn(message, meta);
+    }
+
+    public static info(message: string, meta?: any): void {
+        this.getInstance().info(message, meta);
+    }
+
+    public static debug(message: string, meta?: any): void {
+        this.getInstance().debug(message, meta);
     }
 
     private createLogger(): winston.Logger {

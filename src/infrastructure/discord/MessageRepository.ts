@@ -1,14 +1,13 @@
 import { Client, TextChannel, ChannelType } from 'discord.js';
 import { IMessageRepository } from '../../domain/repositories/IMessageRepository';
 import { DiscordMessage } from '../../domain/entities/DiscordMessage';
-import { ILogger } from '../logger/Logger';
+import { Logger } from '../logger/Logger';
 import { EmojiConfig, EmojiUtils } from './EmojiUtils';
 import { ConfigManager } from '../config/ConfigManager';
 
 export class MessageRepository implements IMessageRepository {
     constructor(
-        private readonly client: Client,
-        private readonly logger: ILogger
+        private readonly client: Client
     ) { }
 
     async getMessage(messageId: string, channelId: string): Promise<DiscordMessage | null> {
@@ -16,20 +15,20 @@ export class MessageRepository implements IMessageRepository {
             const channel = await this.client.channels.fetch(channelId);
 
             if (!channel || !channel.isTextBased()) {
-                this.logger.warn('Channel not found or not text-based', { channelId });
+                Logger.warn('Channel not found or not text-based', { channelId });
                 return null;
             }
 
             const message = await (channel as TextChannel).messages.fetch(messageId);
 
             if (!message) {
-                this.logger.warn('Message not found', { messageId, channelId });
+                Logger.warn('Message not found', { messageId, channelId });
                 return null;
             }
 
             return DiscordMessage.fromDiscordJSMessage(message);
         } catch (error) {
-            this.logger.error('Failed to fetch message', {
+            Logger.error('Failed to fetch message', {
                 messageId,
                 channelId,
                 error: error instanceof Error ? error.message : String(error),
@@ -43,7 +42,7 @@ export class MessageRepository implements IMessageRepository {
         const monitorChannelIds = configManager.getMonitorChannelIds();
         const isMonitored = monitorChannelIds.includes(channelId);
 
-        this.logger.debug('Channel monitoring check', {
+        Logger.debug('Channel monitoring check', {
             channelId,
             isMonitored,
             monitorChannelIds,
@@ -57,14 +56,14 @@ export class MessageRepository implements IMessageRepository {
             const channel = await this.client.channels.fetch(channelId);
 
             if (!channel || !channel.isTextBased()) {
-                this.logger.warn('Channel not found or not text-based for reaction check', { channelId });
+                Logger.warn('Channel not found or not text-based for reaction check', { channelId });
                 return false;
             }
 
             const message = await (channel as TextChannel).messages.fetch(messageId);
 
             if (!message) {
-                this.logger.warn('Message not found for reaction check', { messageId, channelId });
+                Logger.warn('Message not found for reaction check', { messageId, channelId });
                 return false;
             }
 
@@ -80,7 +79,7 @@ export class MessageRepository implements IMessageRepository {
                 }
             }
 
-            this.logger.debug('Reaction check result', {
+            Logger.debug('Reaction check result', {
                 messageId,
                 channelId,
                 emojiIdentifier: EmojiUtils.getIdentifier(emojiConfig),
@@ -90,7 +89,7 @@ export class MessageRepository implements IMessageRepository {
 
             return hasReaction && reactionCount > 0;
         } catch (error) {
-            this.logger.error('Failed to check reaction', {
+            Logger.error('Failed to check reaction', {
                 messageId,
                 channelId,
                 emojiIdentifier: EmojiUtils.getIdentifier(emojiConfig),
@@ -110,7 +109,7 @@ export class MessageRepository implements IMessageRepository {
 
             const sentMessage = await (channel as TextChannel).send(content);
 
-            this.logger.info('Message sent successfully', {
+            Logger.info('Message sent successfully', {
                 channelId,
                 messageId: sentMessage.id,
                 contentLength: content.length,
@@ -118,7 +117,7 @@ export class MessageRepository implements IMessageRepository {
 
             return sentMessage.id;
         } catch (error) {
-            this.logger.error('Failed to send message', {
+            Logger.error('Failed to send message', {
                 channelId,
                 contentLength: content.length,
                 error: error instanceof Error ? error.message : String(error),
@@ -132,14 +131,14 @@ export class MessageRepository implements IMessageRepository {
             const channel = await this.client.channels.fetch(channelId);
 
             if (!channel || !channel.isTextBased()) {
-                this.logger.warn('Channel not found or not text-based for adding reaction', { channelId });
+                Logger.warn('Channel not found or not text-based for adding reaction', { channelId });
                 return false;
             }
 
             const message = await (channel as TextChannel).messages.fetch(messageId);
 
             if (!message) {
-                this.logger.warn('Message not found for adding reaction', { messageId, channelId });
+                Logger.warn('Message not found for adding reaction', { messageId, channelId });
                 return false;
             }
 
@@ -147,7 +146,7 @@ export class MessageRepository implements IMessageRepository {
             const emojiIdentifier = EmojiUtils.getReactionIdentifier(emojiConfig);
             await message.react(emojiIdentifier);
 
-            this.logger.info('Reaction added successfully', {
+            Logger.info('Reaction added successfully', {
                 messageId,
                 channelId,
                 emojiIdentifier: EmojiUtils.getIdentifier(emojiConfig),
@@ -155,7 +154,7 @@ export class MessageRepository implements IMessageRepository {
 
             return true;
         } catch (error) {
-            this.logger.error('Failed to add reaction', {
+            Logger.error('Failed to add reaction', {
                 messageId,
                 channelId,
                 emojiIdentifier: EmojiUtils.getIdentifier(emojiConfig),

@@ -1,6 +1,6 @@
 import { ConnectionMonitorUseCase } from '../../domain/usecases/ConnectionMonitorUseCase';
 import { ConnectionEvent } from '../../domain/entities/ConnectionStatus';
-import { ILogger } from '../../infrastructure/logger/Logger';
+import { Logger } from '../../infrastructure/logger/Logger';
 import { AlertNotifier } from '../../infrastructure/logger/AlertNotifier';
 
 export class ConnectionService {
@@ -8,7 +8,6 @@ export class ConnectionService {
 
     constructor(
         private readonly connectionMonitorUseCase: ConnectionMonitorUseCase,
-        private readonly logger: ILogger,
         private readonly alertNotifier: AlertNotifier
     ) { }
 
@@ -27,7 +26,7 @@ export class ConnectionService {
             (event: ConnectionEvent) => this.handleConnectionEvent(event)
         );
 
-        this.logger.info('Connection service started');
+        Logger.info('Connection service started');
     }
 
     /**
@@ -41,14 +40,14 @@ export class ConnectionService {
         this.isStarted = false;
         this.connectionMonitorUseCase.stopMonitoring();
 
-        this.logger.info('Connection service stopped');
+        Logger.info('Connection service stopped');
     }
 
     /**
      * 手動で再接続を実行
      */
     public async forceReconnect(): Promise<boolean> {
-        this.logger.info('Manual reconnection requested via ConnectionService');
+        Logger.info('Manual reconnection requested via ConnectionService');
         return await this.connectionMonitorUseCase.forceReconnect();
     }
 
@@ -66,7 +65,7 @@ export class ConnectionService {
         try {
             switch (event.type) {
                 case 'connected':
-                    this.logger.info('Discord connection established');
+                    Logger.info('Discord connection established');
                     // 通知頻度が多すぎるため、一旦コメントアウト
                     // await this.alertNotifier.sendAlert(
                     //     'info',
@@ -76,7 +75,7 @@ export class ConnectionService {
                     break;
 
                 case 'disconnected':
-                    this.logger.warn('Discord connection lost', {
+                    Logger.warn('Discord connection lost', {
                         error: event.error?.message
                     });
                     await this.alertNotifier.sendAlert(
@@ -88,7 +87,7 @@ export class ConnectionService {
                     break;
 
                 case 'reconnecting':
-                    this.logger.info(`Attempting reconnection (attempt ${event.attempt})`);
+                    Logger.info(`Attempting reconnection (attempt ${event.attempt})`);
                     if (event.attempt && event.attempt % 5 === 0) {
                         // 5回に1回アラートを送信（スパム防止）
                         await this.alertNotifier.sendAlert(
@@ -100,7 +99,7 @@ export class ConnectionService {
                     break;
 
                 case 'error':
-                    this.logger.error('Discord connection error', {
+                    Logger.error('Discord connection error', {
                         error: event.error?.message,
                         stack: event.error?.stack
                     });
@@ -113,7 +112,7 @@ export class ConnectionService {
                     break;
             }
         } catch (error) {
-            this.logger.error('Error handling connection event', {
+            Logger.error('Error handling connection event', {
                 eventType: event.type,
                 error: error instanceof Error ? error.message : String(error)
             });

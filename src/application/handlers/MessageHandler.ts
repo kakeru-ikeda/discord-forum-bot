@@ -1,12 +1,11 @@
 import { Message } from 'discord.js';
 import { ForumService } from '../services/ForumService';
 import { DiscordMessage } from '../../domain/entities/DiscordMessage';
-import { ILogger } from '../../infrastructure/logger/Logger';
+import { Logger } from '../../infrastructure/logger/Logger';
 
 export class MessageHandler {
     constructor(
-        private readonly forumService: ForumService,
-        private readonly logger: ILogger
+        private readonly forumService: ForumService
     ) { }
 
     async handleMessage(discordMessage: Message): Promise<void> {
@@ -26,7 +25,7 @@ export class MessageHandler {
                 return;
             }
 
-            this.logger.debug('Received message', {
+            Logger.debug('Received message', {
                 messageId: discordMessage.id,
                 authorId: discordMessage.author.id,
                 channelId: discordMessage.channelId,
@@ -41,7 +40,7 @@ export class MessageHandler {
             await this.forumService.handleMessage(message);
 
         } catch (error) {
-            this.logger.error('Unhandled error in message handler', {
+            Logger.error('Unhandled error in message handler', {
                 messageId: discordMessage.id,
                 error: error instanceof Error ? error.message : String(error),
                 stack: error instanceof Error ? error.stack : undefined,
