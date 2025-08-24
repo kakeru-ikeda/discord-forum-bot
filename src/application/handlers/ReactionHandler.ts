@@ -1,16 +1,33 @@
 import { MessageReaction, User, PartialMessageReaction, PartialUser } from 'discord.js';
 import { ForumService } from '../services/ForumService';
+import { ForumTagHandler } from './ForumTagHandler';
 import { ILogger } from '../../infrastructure/logger/Logger';
 
 export class ReactionHandler {
     constructor(
         private readonly forumService: ForumService,
+        private readonly forumTagHandler: ForumTagHandler,
         private readonly logger: ILogger
     ) { }
 
-    async handleReaction(
+    async handleReactionAdd(
         reaction: MessageReaction | PartialMessageReaction,
         user: User | PartialUser
+    ): Promise<void> {
+        await this.handleReactionChange(reaction, user, 'add');
+    }
+
+    async handleReactionRemove(
+        reaction: MessageReaction | PartialMessageReaction,
+        user: User | PartialUser
+    ): Promise<void> {
+        await this.handleReactionChange(reaction, user, 'remove');
+    }
+
+    private async handleReactionChange(
+        reaction: MessageReaction | PartialMessageReaction,
+        user: User | PartialUser,
+        action: 'add' | 'remove'
     ): Promise<void> {
         try {
             // パーシャルな場合はフェッチ
@@ -46,7 +63,7 @@ export class ReactionHandler {
                 return;
             }
 
-            this.logger.debug('Received reaction', {
+            this.logger.debug(`Received reaction ${action}`, {
                 messageId: reaction.message.id,
                 channelId: reaction.message.channelId,
                 guildId: reaction.message.guildId,
@@ -54,20 +71,44 @@ export class ReactionHandler {
                 emojiId: reaction.emoji.id,
                 userId: user.id,
                 reactionCount: reaction.count,
+                action,
             });
 
-            // フォーラムサービスでリアクションを処理
-            await this.forumService.handleReaction(
-                reaction.message.id,
-                reaction.message.channelId,
-                reaction.emoji,
-                user.id
-            );
+            // フォーラムサービスでリアクションを処理（フォーラム作成トリガーのみ、リアクション追加時のみ）
+            if (action === 'add') {
+                await this.forumService.handleReaction(
+                    reaction.message.id,
+                    reaction.message.channelId,
+                    reaction.emoji,
+                    user.id
+                );
+            }
+
+            // フォーラム投稿でのタグ選択リアクションを処理
+            // （フォーラムチャンネル内のスレッドでのリアクションかどうかを判定）
+            if (reaction.message.channel?.isThread()) {
+                if (action === 'add') {
+                    await this.forumTagHandler.handleForumPostReactionAdd(
+                        reaction.message.id,
+                        reaction.message.channelId,
+                        reaction.emoji,
+                        user.id
+                    );
+                } else {
+                    await this.forumTagHandler.handleForumPostReactionRemove(
+                        reaction.message.id,
+                        reaction.message.channelId,
+                        reaction.emoji,
+                        user.id
+                    );
+                }
+            }
 
         } catch (error) {
-            this.logger.error('Unhandled error in reaction handler', {
+            this.logger.error(`Unhandled error in reaction ${action} handler`, {
                 messageId: reaction.message?.id,
                 userId: user?.id,
+                action,
                 error: error instanceof Error ? error.message : String(error),
                 stack: error instanceof Error ? error.stack : undefined,
             });

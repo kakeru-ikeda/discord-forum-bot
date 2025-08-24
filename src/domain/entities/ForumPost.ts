@@ -1,4 +1,6 @@
 import { DiscordMessage, IDiscordAttachment } from './DiscordMessage';
+import { ForumTag } from './ForumTag';
+import { EmojiUtils } from '../../infrastructure/discord/EmojiUtils';
 
 export interface IForumPost {
     title: string;
@@ -10,6 +12,7 @@ export interface IForumPost {
     originalChannelId: string;
     createdAt: Date;
     attachments: IDiscordAttachment[];
+    availableTags?: ForumTag[];
 }
 
 export class ForumPost implements IForumPost {
@@ -22,12 +25,13 @@ export class ForumPost implements IForumPost {
         public readonly originalMessageId: string,
         public readonly originalChannelId: string,
         public readonly createdAt: Date,
-        public readonly attachments: IDiscordAttachment[]
+        public readonly attachments: IDiscordAttachment[],
+        public readonly availableTags?: ForumTag[]
     ) { }
 
-    public static createFromMessage(message: DiscordMessage, maxTitleLength: number): ForumPost {
+    public static createFromMessage(message: DiscordMessage, maxTitleLength: number, availableTags?: ForumTag[]): ForumPost {
         const title = ForumPost.generateTitle(message, maxTitleLength);
-        const content = ForumPost.generateContent(message);
+        const content = ForumPost.generateContent(message, availableTags);
 
         return new ForumPost(
             title,
@@ -38,7 +42,8 @@ export class ForumPost implements IForumPost {
             message.id,
             message.channelId,
             new Date(),
-            message.getAllAttachments()
+            message.getAllAttachments(),
+            availableTags
         );
     }
 
@@ -65,7 +70,7 @@ export class ForumPost implements IForumPost {
         return `${authorPart}${truncatedContent}${closeBracket}`;
     }
 
-    private static generateContent(message: DiscordMessage): string {
+    private static generateContent(message: DiscordMessage, availableTags?: ForumTag[]): string {
         const lines = [
             '**元の投稿:**',
             message.content,
@@ -79,6 +84,22 @@ export class ForumPost implements IForumPost {
         if (message.hasAttachments()) {
             const attachmentCount = message.getAllAttachments().length;
             lines.push(`**添付ファイル:** ${attachmentCount}個`);
+        }
+
+        // 利用可能なタグとリアクションの対応関係を表示
+        if (availableTags && availableTags.length > 0) {
+            const tagsWithEmoji = availableTags.filter(tag => tag.hasEmoji());
+            if (tagsWithEmoji.length > 0) {
+                lines.push('');
+                lines.push('**🏷️ 利用可能なタグ:**');
+                lines.push('下のリアクションを押してタグを選択してください！');
+                lines.push('');
+
+                tagsWithEmoji.forEach(tag => {
+                    const emojiDisplay = EmojiUtils.formatTagEmojiForDisplay(tag);
+                    lines.push(`${emojiDisplay} ： **${tag.name}**`);
+                });
+            }
         }
 
         return lines.join('\n');

@@ -3,6 +3,8 @@ import { IMessageRepository } from '../repositories/IMessageRepository';
 import { ForumPost } from '../entities/ForumPost';
 import { DiscordMessage } from '../entities/DiscordMessage';
 import { ForumCreationStatus } from '../entities/ForumCreationStatus';
+import { ForumTag } from '../entities/ForumTag';
+import { ForumTagUseCase } from './ForumTagUseCase';
 
 export interface CreateForumResult {
     forumPostId: string;
@@ -13,7 +15,8 @@ export interface CreateForumResult {
 export class CreateForumUseCase {
     constructor(
         private readonly forumRepository: IForumRepository,
-        private readonly messageRepository: IMessageRepository
+        private readonly messageRepository: IMessageRepository,
+        private readonly forumTagUseCase: ForumTagUseCase
     ) { }
 
     async execute(
@@ -43,8 +46,18 @@ export class CreateForumUseCase {
             throw new Error(`Forum channel ${forumChannelId} is not accessible`);
         }
 
-        // フォーラム投稿を作成
-        const forumPost = ForumPost.createFromMessage(message, maxTitleLength);
+        // フォーラムチャンネルのタグ情報を取得
+        let availableTags: ForumTag[];
+        try {
+            availableTags = await this.forumTagUseCase.getTagsWithEmoji(forumChannelId);
+        } catch (error) {
+            // タグ取得に失敗してもフォーラム作成は続行
+            console.error('Failed to get forum tags:', error);
+            availableTags = [];
+        }
+
+        // フォーラム投稿を作成（タグ情報も含める）
+        const forumPost = ForumPost.createFromMessage(message, maxTitleLength, availableTags);
 
         // フォーラムに投稿
         const forumPostId = await this.forumRepository.createForumPost(forumChannelId, forumPost);
@@ -76,6 +89,17 @@ export class CreateForumUseCase {
         // 元の投稿チャンネルに指定されたメッセージを送信
         const notificationMessage = `おぅりゃりゃー！　とぉりゃりゃー！\n${forumUrl}`;
         await this.messageRepository.sendMessage(message.channelId, notificationMessage);
+
+        // フォーラムチャンネルのタグを取得し、絵文字を持つタグのリアクションを追加
+        try {
+            const tagsWithEmoji = await this.forumTagUseCase.getTagsWithEmoji(forumChannelId);
+            if (tagsWithEmoji.length > 0) {
+                await this.forumTagUseCase.addTagEmojiReactions(forumPostId, tagsWithEmoji);
+            }
+        } catch (error) {
+            // タグ関連のエラーはログに記録するが、フォーラム作成自体は成功とする
+            console.error('Failed to add tag emoji reactions:', error);
+        }
 
         return {
             forumPostId,

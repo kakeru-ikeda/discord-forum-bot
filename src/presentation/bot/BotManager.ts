@@ -7,10 +7,12 @@ import { ConfigManager } from '../../infrastructure/config/ConfigManager';
 import { CreateForumUseCase } from '../../domain/usecases/CreateForumUseCase';
 import { MonitorMessageUseCase } from '../../domain/usecases/MonitorMessageUseCase';
 import { ConnectionMonitorUseCase } from '../../domain/usecases/ConnectionMonitorUseCase';
+import { ForumTagUseCase } from '../../domain/usecases/ForumTagUseCase';
 import { ForumService } from '../../application/services/ForumService';
 import { ConnectionService } from '../../application/services/ConnectionService';
 import { MessageHandler } from '../../application/handlers/MessageHandler';
 import { ReactionHandler } from '../../application/handlers/ReactionHandler';
+import { ForumTagHandler } from '../../application/handlers/ForumTagHandler';
 import { DiscordConnectionManager } from '../../infrastructure/connection/DiscordConnectionManager';
 import { ExponentialBackoffStrategy, FixedIntervalStrategy } from '../../infrastructure/connection/ReconnectionStrategy';
 import { ForumCreationStatusStorage } from '../../infrastructure/storage/ForumCreationStatusStorage';
@@ -21,6 +23,7 @@ export class BotManager {
     private alertNotifier: AlertNotifier;
     private messageHandler: MessageHandler;
     private reactionHandler: ReactionHandler;
+    private forumTagHandler: ForumTagHandler;
     private connectionService!: ConnectionService;
     private isShuttingDown: boolean = false;
 
@@ -58,7 +61,8 @@ export class BotManager {
         );
 
         // UseCase の初期化
-        const createForumUseCase = new CreateForumUseCase(forumRepository, messageRepository);
+        const forumTagUseCase = new ForumTagUseCase(forumRepository);
+        const createForumUseCase = new CreateForumUseCase(forumRepository, messageRepository, forumTagUseCase);
         const monitorMessageUseCase = new MonitorMessageUseCase(messageRepository);
 
         // Service の初期化
@@ -77,7 +81,14 @@ export class BotManager {
 
         // Handler の初期化
         this.messageHandler = new MessageHandler(forumService, this.logger);
-        this.reactionHandler = new ReactionHandler(forumService, this.logger);
+        this.forumTagHandler = new ForumTagHandler(
+            forumTagUseCase,
+            forumRepository,
+            this.discordClient.getClient(),
+            this.logger,
+            this.alertNotifier
+        );
+        this.reactionHandler = new ReactionHandler(forumService, this.forumTagHandler, this.logger);
 
         // 接続管理機能の初期化
         this.setupConnectionManagement();
@@ -198,7 +209,11 @@ export class BotManager {
             });
 
             this.discordClient.addReactionHandler(async (reaction, user) => {
-                await this.reactionHandler.handleReaction(reaction, user);
+                await this.reactionHandler.handleReactionAdd(reaction, user);
+            });
+
+            this.discordClient.addReactionRemoveHandler(async (reaction, user) => {
+                await this.reactionHandler.handleReactionRemove(reaction, user);
             });
 
             // Discord にログイン

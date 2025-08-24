@@ -105,6 +105,20 @@ export class EmojiUtils {
     }
 
     /**
+     * ForumTagから絵文字を表示用にフォーマット
+     */
+    static formatTagEmojiForDisplay(tag: { emojiId?: string | null; emojiName?: string | null }): string {
+        if (tag.emojiId) {
+            // カスタム絵文字の場合
+            return `<:${tag.emojiName || 'unknown'}:${tag.emojiId}>`;
+        } else if (tag.emojiName) {
+            // Unicode絵文字の場合
+            return tag.emojiName;
+        }
+        return '❓';
+    }
+
+    /**
      * リアクション追加用の絵文字識別子を取得
      * message.react()で使用する形式に変換
      */

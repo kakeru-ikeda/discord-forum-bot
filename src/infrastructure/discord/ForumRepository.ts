@@ -3,6 +3,7 @@ import { IForumRepository } from '../../domain/repositories/IForumRepository';
 import { ForumPost } from '../../domain/entities/ForumPost';
 import { ForumCreationStatus } from '../../domain/entities/ForumCreationStatus';
 import { IDiscordAttachment } from '../../domain/entities/DiscordMessage';
+import { ForumTag } from '../../domain/entities/ForumTag';
 import { ILogger } from '../logger/Logger';
 import { ForumCreationStatusStorage } from '../storage/ForumCreationStatusStorage';
 
@@ -228,6 +229,124 @@ export class ForumRepository implements IForumRepository {
             this.logger.error('Failed to save forum creation status', {
                 messageId: status.messageId,
                 channelId: status.channelId,
+                error: error instanceof Error ? error.message : String(error),
+            });
+            throw error;
+        }
+    }
+
+    async getForumTags(forumChannelId: string): Promise<ForumTag[]> {
+        try {
+            const channel = await this.client.channels.fetch(forumChannelId);
+
+            if (!channel || channel.type !== ChannelType.GuildForum) {
+                throw new Error(`Channel ${forumChannelId} is not a forum channel`);
+            }
+
+            const forumChannel = channel as ForumChannel;
+            const tags = forumChannel.availableTags;
+
+            const forumTags = tags.map(tag => ForumTag.fromDiscordTag(tag));
+
+            this.logger.debug('Forum tags retrieved', {
+                forumChannelId,
+                tagCount: forumTags.length,
+                tags: forumTags.map(tag => ({ id: tag.id, name: tag.name, hasEmoji: tag.hasEmoji() }))
+            });
+
+            return forumTags;
+        } catch (error) {
+            this.logger.error('Failed to get forum tags', {
+                forumChannelId,
+                error: error instanceof Error ? error.message : String(error),
+            });
+            throw error;
+        }
+    }
+
+    async addReactionToForumPost(forumPostId: string, emojiIdentifier: string): Promise<void> {
+        try {
+            const thread = await this.client.channels.fetch(forumPostId);
+
+            if (!thread || !thread.isThread()) {
+                throw new Error(`Channel ${forumPostId} is not a thread`);
+            }
+
+            // スレッドの最初のメッセージ（フォーラム投稿の本文）を取得
+            const starterMessage = await thread.fetchStarterMessage();
+            if (!starterMessage) {
+                throw new Error(`Could not fetch starter message for thread ${forumPostId}`);
+            }
+
+            // リアクションを追加
+            await starterMessage.react(emojiIdentifier);
+
+            this.logger.debug('Reaction added to forum post', {
+                forumPostId,
+                emojiIdentifier,
+                messageId: starterMessage.id,
+            });
+        } catch (error) {
+            this.logger.error('Failed to add reaction to forum post', {
+                forumPostId,
+                emojiIdentifier,
+                error: error instanceof Error ? error.message : String(error),
+            });
+            throw error;
+        }
+    }
+
+    async addTagsToForumPost(forumChannelId: string, forumPostId: string, tagIds: string[]): Promise<void> {
+        try {
+            const channel = await this.client.channels.fetch(forumChannelId);
+
+            if (!channel || channel.type !== ChannelType.GuildForum) {
+                throw new Error(`Channel ${forumChannelId} is not a forum channel`);
+            }
+
+            const thread = await this.client.channels.fetch(forumPostId);
+            if (!thread || !thread.isThread()) {
+                throw new Error(`Channel ${forumPostId} is not a thread`);
+            }
+
+            // タグを追加
+            await thread.setAppliedTags(tagIds);
+
+            this.logger.info('Tags added to forum post', {
+                forumChannelId,
+                forumPostId,
+                tagIds,
+            });
+        } catch (error) {
+            this.logger.error('Failed to add tags to forum post', {
+                forumChannelId,
+                forumPostId,
+                tagIds,
+                error: error instanceof Error ? error.message : String(error),
+            });
+            throw error;
+        }
+    }
+
+    async getCurrentForumPostTags(forumPostId: string): Promise<string[]> {
+        try {
+            const thread = await this.client.channels.fetch(forumPostId);
+            if (!thread || !thread.isThread()) {
+                throw new Error(`Channel ${forumPostId} is not a thread`);
+            }
+
+            const currentTags = thread.appliedTags || [];
+
+            this.logger.debug('Current forum post tags retrieved', {
+                forumPostId,
+                tagCount: currentTags.length,
+                tagIds: currentTags,
+            });
+
+            return currentTags;
+        } catch (error) {
+            this.logger.error('Failed to get current forum post tags', {
+                forumPostId,
                 error: error instanceof Error ? error.message : String(error),
             });
             throw error;

@@ -24,7 +24,8 @@
   },
   "bot": {
     "maxTitleLength": 100,
-    "maxContentPreview": 200
+    "maxContentPreview": 200,
+    "enableForumTags": true
   },
   "connection": {
     "healthCheckInterval": 30000,

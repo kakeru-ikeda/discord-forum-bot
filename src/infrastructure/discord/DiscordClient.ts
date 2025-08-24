@@ -88,7 +88,17 @@ export class DiscordClient {
             try {
                 await handler(reaction, user);
             } catch (error) {
-                this.logger.error('Error in reaction handler', { error: error instanceof Error ? error.message : String(error) });
+                this.logger.error('Error in reaction add handler', { error: error instanceof Error ? error.message : String(error) });
+            }
+        });
+    }
+
+    public addReactionRemoveHandler(handler: (reaction: any, user: any) => Promise<void>): void {
+        this.client.on('messageReactionRemove', async (reaction, user) => {
+            try {
+                await handler(reaction, user);
+            } catch (error) {
+                this.logger.error('Error in reaction remove handler', { error: error instanceof Error ? error.message : String(error) });
             }
         });
     }

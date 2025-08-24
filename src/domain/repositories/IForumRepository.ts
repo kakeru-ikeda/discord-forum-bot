@@ -1,6 +1,7 @@
 import { ForumPost } from '../entities/ForumPost';
 import { ForumCreationStatus } from '../entities/ForumCreationStatus';
 import { IDiscordAttachment } from '../entities/DiscordMessage';
+import { ForumTag } from '../entities/ForumTag';
 
 export interface IForumRepository {
     /**
@@ -47,4 +48,33 @@ export interface IForumRepository {
      * @param status フォーラム作成状態
      */
     saveForumCreationStatus(status: ForumCreationStatus): Promise<void>;
+
+    /**
+     * フォーラムチャンネルの利用可能なタグを取得する
+     * @param forumChannelId フォーラムチャンネルのID
+     * @returns フォーラムタグの配列
+     */
+    getForumTags(forumChannelId: string): Promise<ForumTag[]>;
+
+    /**
+     * フォーラム投稿にリアクションを追加する
+     * @param forumPostId フォーラム投稿のID
+     * @param emojiIdentifier 絵文字の識別子（カスタム絵文字の場合はID、標準絵文字の場合は名前）
+     */
+    addReactionToForumPost(forumPostId: string, emojiIdentifier: string): Promise<void>;
+
+    /**
+     * フォーラム投稿にタグを追加する
+     * @param forumChannelId フォーラムチャンネルのID
+     * @param forumPostId フォーラム投稿のID
+     * @param tagIds 追加するタグのIDの配列
+     */
+    addTagsToForumPost(forumChannelId: string, forumPostId: string, tagIds: string[]): Promise<void>;
+
+    /**
+     * フォーラム投稿の現在のタグを取得する
+     * @param forumPostId フォーラム投稿のID
+     * @returns 現在適用されているタグのIDの配列
+     */
+    getCurrentForumPostTags(forumPostId: string): Promise<string[]>;
 }
